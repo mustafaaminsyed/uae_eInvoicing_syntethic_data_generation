@@ -94,6 +94,24 @@ A lightweight frontend viewer is available under `ui/` to explore generated data
 - date range
 - payable amount range and segment
 
+Latest UI capabilities include:
+
+- Dariba-branded UI theme and logo integration
+- section-level expand/collapse toggles across all major panels
+- drag-and-drop upload with checklist and schema detection
+- staged/verified/loaded/error upload states with row-count summaries
+- invoice mode switch:
+  - `Taxable E-Invoice (Mandatory 4.1)`
+  - `Commercial XML (Mandatory 1-51)`
+- mandatory field coverage matrix with present/missing status
+- coverage navigator for bulk invoice review:
+  - invoice selector
+  - missing-only/complete-only filtering
+  - sort by missing count
+  - previous/next navigation
+- PDF preview before download
+- PDF scope controls (`selected` vs `filtered`) with max-document guardrail
+
 To run locally:
 
 ```powershell
@@ -114,6 +132,10 @@ You can replace this path in the viewer to load any run folder containing:
 - `invoice_headers.csv`
 - `invoice_lines.csv`
 - `invoice_vat_breakdown.csv`
+
+Or load a MoF flat dataset file via drag-and-drop:
+
+- `mof_schema_dataset.csv`
 
 ## Schema Alignment Status
 
