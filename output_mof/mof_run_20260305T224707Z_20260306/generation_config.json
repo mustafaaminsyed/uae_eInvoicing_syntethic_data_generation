@@ -1,0 +1,15 @@
+{
+  "n_documents": 100,
+  "invalid_share": 0.15,
+  "credit_note_share": 0.06,
+  "ae_buyer_share": 0.85,
+  "seed": 20260306,
+  "start_date": "2026-01-01",
+  "end_date": "2026-12-31",
+  "currency": "AED",
+  "seller_name": "Synthetic Gulf Tech LLC",
+  "seller_trn": "100987654321000",
+  "seller_tin": "1009876543",
+  "scenario_profile": "UAE local B2B with controlled negatives",
+  "schema_reference": "UAE MoF Mandatory Fields V1.0 (2026-02-23)"
+}
