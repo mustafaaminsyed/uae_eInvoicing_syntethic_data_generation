@@ -1,0 +1,4 @@
+LineID,InvoiceID,LineNumber,ItemCode,ItemDescription,Quantity,UnitOfMeasure,UnitPrice,LineAllowanceAmount,LineChargeAmount,LineExtensionAmount,TaxCategory,TaxRate,TaxAmount,ErrorScenarioCode
+LINE-90000001,INV-2026-900001,1,ITM001,Consulting Hours,10.000,HUR,200.00,0.00,0.00,2000.00,S,5.00,100.00,
+LINE-90000002,INV-2026-900001,2,ITM002,Hardware Accessory Kit,3.000,EA,500.00,0.00,0.00,1500.00,S,5.00,75.00,
+LINE-90000003,CN-2026-900001,1,ITM001,Consulting Hours (Credit),2.500,HUR,200.00,0.00,0.00,-500.00,S,5.00,-25.00,ERR09_CREDIT_NO_REFERENCE

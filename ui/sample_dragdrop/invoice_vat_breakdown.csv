@@ -1,0 +1,3 @@
+InvoiceID,TaxCategory,TaxRate,TaxableAmount,TaxAmount,ErrorScenarioCode
+INV-2026-900001,S,5.00,3500.00,175.00,
+CN-2026-900001,S,5.00,-500.00,-25.00,ERR09_CREDIT_NO_REFERENCE

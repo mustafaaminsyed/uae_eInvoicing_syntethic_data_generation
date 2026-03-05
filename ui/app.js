@@ -8,6 +8,8 @@ const state = {
   filtered: [],
   selectedInvoice: null,
   stagedFiles: null,
+  sourceSchema: "unknown",
+  mofRowsByInvoice: new Map(),
 };
 
 const $ = (id) => document.getElementById(id);
@@ -19,6 +21,11 @@ const nodes = {
   fileInput: $("fileInput"),
   preloadSummary: $("preloadSummary"),
   uploadState: $("uploadState"),
+  chkHeaders: $("chkHeaders"),
+  chkLines: $("chkLines"),
+  chkVat: $("chkVat"),
+  chkMof: $("chkMof"),
+  schemaDetected: $("schemaDetected"),
   statusText: $("statusText"),
   totalDocs: $("totalDocs"),
   invoice380: $("invoice380"),
@@ -41,6 +48,8 @@ const nodes = {
   linesDetail: $("linesDetail"),
   vatDetail: $("vatDetail"),
   invoicePreview: $("invoicePreview"),
+  mandatoryMatrix: $("mandatoryMatrix"),
+  invoiceMode: $("invoiceMode"),
   pdfScope: $("pdfScope"),
   pdfMaxDocs: $("pdfMaxDocs"),
   previewPdfBtn: $("previewPdfBtn"),
@@ -48,6 +57,63 @@ const nodes = {
   pdfHint: $("pdfHint"),
   pdfPreviewFrame: $("pdfPreviewFrame"),
 };
+
+const TAXABLE_FIELDS = [
+  ["1", "Invoice number", "invoice_number"],
+  ["2", "Invoice date", "invoice_date"],
+  ["3", "Invoice type code", "invoice_type_code"],
+  ["4", "Invoice currency code", "invoice_currency_code"],
+  ["5", "Invoice transaction type code", "invoice_transaction_type_code"],
+  ["6", "Payment due date", "payment_due_date"],
+  ["7", "Business process type", "business_process_type"],
+  ["8", "Specification identifier", "specification_identifier"],
+  ["9", "Payment means type code", "payment_means_type_code"],
+  ["10", "Seller name", "seller_name"],
+  ["11", "Seller electronic address", "seller_electronic_address"],
+  ["12", "Seller electronic identifier", "seller_electronic_identifier"],
+  ["13", "Seller legal registration identifier", "seller_legal_registration_identifier"],
+  ["14", "Seller legal registration identifier type", "seller_legal_registration_identifier_type"],
+  ["15", "Seller tax registration identifier", "seller_tax_registration_identifier"],
+  ["16", "Seller tax scheme code", "seller_tax_scheme_code"],
+  ["17", "Seller address line 1", "seller_address_line_1"],
+  ["18", "Seller city", "seller_city"],
+  ["19", "Seller country subdivision", "seller_country_subdivision"],
+  ["20", "Seller country code", "seller_country_code"],
+  ["21", "Buyer name", "buyer_name"],
+  ["22", "Buyer electronic address", "buyer_electronic_address"],
+  ["23", "Buyer electronic identifier", "buyer_electronic_identifier"],
+  ["24", "Buyer legal registration identifier", "buyer_legal_registration_identifier"],
+  ["25", "Buyer legal registration identifier type", "buyer_legal_registration_identifier_type"],
+  ["26", "Buyer address line 1", "buyer_address_line_1"],
+  ["27", "Buyer city", "buyer_city"],
+  ["28", "Buyer country subdivision", "buyer_country_subdivision"],
+  ["29", "Buyer country code", "buyer_country_code"],
+  ["30", "Sum of invoice line net amount", "sum_of_invoice_line_net_amount"],
+  ["31", "Invoice total amount without tax", "invoice_total_amount_without_tax"],
+  ["32", "Invoice total tax amount", "invoice_total_tax_amount"],
+  ["33", "Invoice total amount with tax", "invoice_total_amount_with_tax"],
+  ["34", "Amount due for payment", "amount_due_for_payment"],
+  ["35", "Tax category taxable amount", "tax_category_taxable_amount"],
+  ["36", "Tax category tax amount", "tax_category_tax_amount"],
+  ["37", "Tax category code", "tax_category_code"],
+  ["38", "Tax category rate", "tax_category_rate"],
+  ["39", "Invoice line identifier", "invoice_line_identifier"],
+  ["40", "Invoiced quantity", "invoiced_quantity"],
+  ["41", "Unit of measure code", "unit_of_measure_code"],
+];
+
+const COMMERCIAL_EXTRA_FIELDS = [
+  ["42", "Invoice line net amount", "invoice_line_net_amount"],
+  ["43", "Item net price", "item_net_price"],
+  ["44", "Item gross price", "item_gross_price"],
+  ["45", "Item price base quantity", "item_price_base_quantity"],
+  ["46", "Invoiced item tax category code", "invoiced_item_tax_category_code"],
+  ["47", "Invoiced item tax rate", "invoiced_item_tax_rate"],
+  ["48", "VAT line amount in AED", "vat_line_amount_in_aed"],
+  ["49", "Invoice line amount in AED", "invoice_line_amount_in_aed"],
+  ["50", "Item name", "item_name"],
+  ["51", "Item description", "item_description"],
+];
 
 function parseCSV(content) {
   const rows = [];
@@ -148,6 +214,18 @@ function setStatus(text, isError = false) {
 function setUploadState(kind, text) {
   nodes.uploadState.className = `upload-state ${kind}`;
   nodes.uploadState.textContent = text;
+}
+
+function setChecklist(byName = new Map()) {
+  const checks = [
+    [nodes.chkHeaders, "invoice_headers.csv"],
+    [nodes.chkLines, "invoice_lines.csv"],
+    [nodes.chkVat, "invoice_vat_breakdown.csv"],
+    [nodes.chkMof, "mof_schema_dataset.csv"],
+  ];
+  checks.forEach(([node, file]) => {
+    node.classList.toggle("ok", byName.has(file));
+  });
 }
 
 function missingColumns(rows, requiredCols) {
@@ -269,7 +347,102 @@ function selectInvoice(invoiceId) {
   nodes.linesDetail.textContent = JSON.stringify(lines, null, 2);
   nodes.vatDetail.textContent = JSON.stringify(vat, null, 2);
   renderInvoicePreview(header, lines, vat);
+  renderMandatoryMatrix(header, lines, vat);
   renderTable();
+}
+
+function getInvoiceSourceObject(header, lines, vatRows) {
+  if (state.sourceSchema === "mof") {
+    const src = state.mofRowsByInvoice.get(header.InvoiceID) || [];
+    return src[0] || {};
+  }
+  const firstLine = lines[0] || {};
+  const firstVat = vatRows[0] || {};
+  return {
+    invoice_number: header.InvoiceID,
+    invoice_date: header.IssueDate,
+    invoice_type_code: header.InvoiceTypeCode,
+    invoice_currency_code: header.CurrencyCode,
+    invoice_transaction_type_code: "388",
+    payment_due_date: header.DueDate,
+    business_process_type: "",
+    specification_identifier: "",
+    payment_means_type_code: header.PaymentTermCode || "",
+    seller_name: "Synthetic Seller",
+    seller_electronic_address: "",
+    seller_electronic_identifier: "",
+    seller_legal_registration_identifier: "",
+    seller_legal_registration_identifier_type: "",
+    seller_tax_registration_identifier: header.SellerTRN,
+    seller_tax_scheme_code: "VAT",
+    seller_address_line_1: "",
+    seller_city: "",
+    seller_country_subdivision: "",
+    seller_country_code: "AE",
+    buyer_name: header.BuyerID,
+    buyer_electronic_address: "",
+    buyer_electronic_identifier: "",
+    buyer_legal_registration_identifier: "",
+    buyer_legal_registration_identifier_type: "",
+    buyer_address_line_1: "",
+    buyer_city: "",
+    buyer_country_subdivision: "",
+    buyer_country_code: header.BuyerCountry,
+    sum_of_invoice_line_net_amount: header.TaxExclusiveAmount,
+    invoice_total_amount_without_tax: header.TaxExclusiveAmount,
+    invoice_total_tax_amount: header.TaxAmount,
+    invoice_total_amount_with_tax: header.TaxInclusiveAmount,
+    amount_due_for_payment: header.PayableAmount,
+    tax_category_taxable_amount: firstVat.TaxableAmount || "",
+    tax_category_tax_amount: firstVat.TaxAmount || "",
+    tax_category_code: firstVat.TaxCategory || "",
+    tax_category_rate: firstVat.TaxRate || "",
+    invoice_line_identifier: firstLine.LineNumber || "",
+    invoiced_quantity: firstLine.Quantity || "",
+    unit_of_measure_code: firstLine.UnitOfMeasure || "",
+    invoice_line_net_amount: firstLine.LineExtensionAmount || "",
+    item_net_price: firstLine.UnitPrice || "",
+    item_gross_price: "",
+    item_price_base_quantity: "",
+    invoiced_item_tax_category_code: firstLine.TaxCategory || "",
+    invoiced_item_tax_rate: firstLine.TaxRate || "",
+    vat_line_amount_in_aed: firstLine.TaxAmount || "",
+    invoice_line_amount_in_aed: "",
+    item_name: firstLine.ItemDescription || "",
+    item_description: firstLine.ItemDescription || "",
+  };
+}
+
+function renderMandatoryMatrix(header, lines, vatRows) {
+  const mode = nodes.invoiceMode.value;
+  const source = getInvoiceSourceObject(header, lines, vatRows);
+  const fields = mode === "commercial" ? [...TAXABLE_FIELDS, ...COMMERCIAL_EXTRA_FIELDS] : TAXABLE_FIELDS;
+  const rowsHtml = fields
+    .map(([num, label, key]) => {
+      const value = source[key] ?? "";
+      const present = String(value).trim() !== "";
+      return `<tr>
+        <td>${num}</td>
+        <td>${label}</td>
+        <td>${key}</td>
+        <td class="${present ? "ok" : "miss"}">${present ? "Present" : "Missing"}</td>
+        <td>${present ? String(value) : "-"}</td>
+      </tr>`;
+    })
+    .join("");
+  const presentCount = fields.filter(([, , key]) => String(source[key] ?? "").trim() !== "").length;
+  nodes.mandatoryMatrix.innerHTML = `
+    <h5>
+      Mandatory Field Coverage (${mode === "commercial" ? "Commercial XML 1-51" : "Taxable E-Invoice 1-41"}):
+      ${presentCount}/${fields.length}
+    </h5>
+    <table class="mandatory-table">
+      <thead>
+        <tr><th>No.</th><th>Field</th><th>Key</th><th>Status</th><th>Value</th></tr>
+      </thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+  `;
 }
 
 function renderInvoicePreview(header, lines, vatRows) {
@@ -397,6 +570,8 @@ function buildPdf(headers) {
     doc.text(`Due Date: ${header.DueDate}`, 130, y);
     y += 6;
     doc.text(`Buyer: ${header.BuyerID} (${header.BuyerCountry})`, 14, y);
+    y += 6;
+    doc.text(`Mandatory Mode: ${nodes.invoiceMode.value === "commercial" ? "Commercial XML (1-51)" : "Taxable E-Invoice (1-41)"}`, 14, y);
     y += 8;
     doc.text("Lines:", 14, y);
     y += 6;
@@ -457,14 +632,25 @@ async function loadDataset() {
 
   setStatus("Loading dataset...");
   try {
-    const [headers, lines, vats] = await Promise.all([
-      loadCSV(`${base}/invoice_headers.csv`),
-      loadCSV(`${base}/invoice_lines.csv`),
-      loadCSV(`${base}/invoice_vat_breakdown.csv`),
-    ]);
-    state.headers = headers;
-    state.lines = lines;
-    state.vats = vats;
+    try {
+      const [headers, lines, vats] = await Promise.all([
+        loadCSV(`${base}/invoice_headers.csv`),
+        loadCSV(`${base}/invoice_lines.csv`),
+        loadCSV(`${base}/invoice_vat_breakdown.csv`),
+      ]);
+      state.headers = headers;
+      state.lines = lines;
+      state.vats = vats;
+      state.sourceSchema = "brd";
+      state.mofRowsByInvoice = new Map();
+      setChecklist(new Map([["invoice_headers.csv", true], ["invoice_lines.csv", true], ["invoice_vat_breakdown.csv", true]]));
+      nodes.schemaDetected.textContent = "Schema: BRD split files";
+    } catch {
+      const mofRows = await loadCSV(`${base}/mof_schema_dataset.csv`);
+      loadFromMofRows(mofRows);
+      setChecklist(new Map([["mof_schema_dataset.csv", true]]));
+      nodes.schemaDetected.textContent = "Schema: MoF flat file";
+    }
     buildIndexes();
     populateSelectOptions();
     state.selectedInvoice = null;
@@ -485,10 +671,119 @@ async function loadDataset() {
   }
 }
 
+function loadFromMofRows(mofRows) {
+  const byInvoice = new Map();
+  mofRows.forEach((r) => {
+    const inv = r.invoice_number;
+    if (!byInvoice.has(inv)) byInvoice.set(inv, []);
+    byInvoice.get(inv).push(r);
+  });
+
+  const headers = [];
+  const lines = [];
+  const vats = [];
+
+  byInvoice.forEach((rows, inv) => {
+    const f = rows[0];
+    headers.push({
+      InvoiceID: inv,
+      InvoiceTypeCode: f.invoice_type_code,
+      InvoiceStatus: "ISSUED",
+      IssueDate: f.invoice_date,
+      DueDate: f.payment_due_date,
+      CurrencyCode: f.invoice_currency_code,
+      SellerID: f.seller_name,
+      SellerTRN: f.seller_tax_registration_identifier,
+      BuyerID: f.buyer_name,
+      BuyerTRN: f.buyer_electronic_address,
+      BuyerCountry: f.buyer_country_code,
+      PaymentTermCode: f.payment_means_type_code,
+      OriginalInvoiceID: "",
+      TaxExclusiveAmount: f.invoice_total_amount_without_tax,
+      TaxAmount: f.invoice_total_tax_amount,
+      TaxInclusiveAmount: f.invoice_total_amount_with_tax,
+      PayableAmount: f.amount_due_for_payment,
+      ErrorScenarioCode: f.error_scenario_code || "",
+    });
+    rows.forEach((r) => {
+      lines.push({
+        LineID: `${inv}-${r.invoice_line_identifier}`,
+        InvoiceID: inv,
+        LineNumber: r.invoice_line_identifier,
+        ItemCode: r.item_name,
+        ItemDescription: r.item_description,
+        Quantity: r.invoiced_quantity,
+        UnitOfMeasure: r.unit_of_measure_code,
+        UnitPrice: r.item_net_price,
+        LineAllowanceAmount: "0.00",
+        LineChargeAmount: "0.00",
+        LineExtensionAmount: r.invoice_line_net_amount,
+        TaxCategory: r.invoiced_item_tax_category_code,
+        TaxRate: r.invoiced_item_tax_rate,
+        TaxAmount: r.vat_line_amount_in_aed,
+        ErrorScenarioCode: r.error_scenario_code || "",
+      });
+    });
+    const taxMap = new Map();
+    rows.forEach((r) => {
+      const key = `${r.tax_category_code}|${r.tax_category_rate}`;
+      if (!taxMap.has(key)) {
+        taxMap.set(key, {
+          InvoiceID: inv,
+          TaxCategory: r.tax_category_code,
+          TaxRate: r.tax_category_rate,
+          TaxableAmount: r.tax_category_taxable_amount,
+          TaxAmount: r.tax_category_tax_amount,
+          ErrorScenarioCode: r.error_scenario_code || "",
+        });
+      }
+    });
+    vats.push(...taxMap.values());
+  });
+
+  state.headers = headers;
+  state.lines = lines;
+  state.vats = vats;
+  state.sourceSchema = "mof";
+  state.mofRowsByInvoice = byInvoice;
+}
+
 async function stageFromFiles(fileList) {
   const files = Array.from(fileList || []);
   const needed = ["invoice_headers.csv", "invoice_lines.csv", "invoice_vat_breakdown.csv"];
   const byName = new Map(files.map((f) => [f.name.toLowerCase(), f]));
+  setChecklist(byName);
+  if (byName.has("mof_schema_dataset.csv")) {
+    try {
+      const text = await readFileAsText(byName.get("mof_schema_dataset.csv"));
+      const mofRows = parseCSV(text);
+      if (mofRows.length === 0) {
+        setUploadState("error", "MoF file has no rows");
+        nodes.preloadSummary.textContent = "mof_schema_dataset.csv is empty.";
+        return;
+      }
+      const reqMof = TAXABLE_FIELDS.map(([, , key]) => key);
+      const missMof = missingColumns(mofRows, reqMof);
+      if (missMof.length) {
+        setUploadState("error", "MoF schema validation failed");
+        nodes.preloadSummary.textContent = `MoF file missing columns: ${missMof.join(", ")}`;
+        nodes.schemaDetected.textContent = "Schema: MoF flat file (invalid)";
+        return;
+      }
+      state.stagedFiles = { mode: "mof", mofRows };
+      const invoiceCount = new Set(mofRows.map((r) => r.invoice_number)).size;
+      nodes.preloadSummary.textContent = `Verified MoF file: rows=${mofRows.length}, distinct invoices=${invoiceCount}. Click "Run Dataset" to apply.`;
+      setUploadState("staged", "Uploaded and verified");
+      nodes.schemaDetected.textContent = "Schema: MoF flat file";
+      setStatus("MoF dataset uploaded and verified. Ready to run.");
+      return;
+    } catch (err) {
+      setUploadState("error", "MoF file parsing failed");
+      nodes.schemaDetected.textContent = "Schema: MoF flat file (error)";
+      setStatus(`File parsing failed: ${err.message}`, true);
+      return;
+    }
+  }
   const missing = needed.filter((n) => !byName.has(n));
   if (missing.length > 0) {
     nodes.preloadSummary.textContent = `Missing required file(s): ${missing.join(", ")}`;
@@ -520,10 +815,11 @@ async function stageFromFiles(fileList) {
       return;
     }
     const invoiceCount = new Set(headers.map((h) => h.InvoiceID)).size;
-    state.stagedFiles = { headers, lines, vats };
+    state.stagedFiles = { mode: "brd", headers, lines, vats };
     nodes.preloadSummary.textContent =
       `Verified files: headers=${headers.length} rows, lines=${lines.length} rows, vat=${vats.length} rows, distinct invoices=${invoiceCount}. Click "Run Dataset" to apply.`;
     setUploadState("staged", "Uploaded and verified");
+    nodes.schemaDetected.textContent = "Schema: BRD split files";
     setStatus("Files uploaded and verified. Ready to run.");
   } catch (err) {
     setUploadState("error", "File parsing failed");
@@ -533,9 +829,15 @@ async function stageFromFiles(fileList) {
 
 function loadStagedDataset() {
   if (!state.stagedFiles) return false;
-  state.headers = state.stagedFiles.headers;
-  state.lines = state.stagedFiles.lines;
-  state.vats = state.stagedFiles.vats;
+  if (state.stagedFiles.mode === "mof") {
+    loadFromMofRows(state.stagedFiles.mofRows);
+  } else {
+    state.headers = state.stagedFiles.headers;
+    state.lines = state.stagedFiles.lines;
+    state.vats = state.stagedFiles.vats;
+    state.sourceSchema = "brd";
+    state.mofRowsByInvoice = new Map();
+  }
   buildIndexes();
   populateSelectOptions();
   state.selectedInvoice = null;
@@ -587,8 +889,17 @@ function wireEvents() {
       ? "PDF scope: selected invoice only."
       : "PDF scope: filtered invoices. Max docs applies.";
   });
+  nodes.invoiceMode.addEventListener("change", () => {
+    if (state.selectedInvoice) {
+      const header = state.headers.find((h) => h.InvoiceID === state.selectedInvoice);
+      const lines = state.linesByInvoice.get(state.selectedInvoice) || [];
+      const vat = state.vatByInvoice.get(state.selectedInvoice) || [];
+      if (header) renderMandatoryMatrix(header, lines, vat);
+    }
+  });
 }
 
 wireEvents();
 setUploadState("idle", "No files staged");
 nodes.pdfMaxDocs.disabled = true;
+setChecklist(new Map());

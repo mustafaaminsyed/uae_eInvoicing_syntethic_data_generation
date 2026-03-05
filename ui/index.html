@@ -30,10 +30,23 @@
             <span>Run Dataset</span>
           </button>
         </div>
+        <div class="upload-checklist">
+          <p class="check-title">Upload Checklist</p>
+          <div class="check-grid">
+            <div id="chkHeaders" class="check-item">invoice_headers.csv</div>
+            <div id="chkLines" class="check-item">invoice_lines.csv</div>
+            <div id="chkVat" class="check-item">invoice_vat_breakdown.csv</div>
+            <div id="chkMof" class="check-item">mof_schema_dataset.csv</div>
+          </div>
+          <p id="schemaDetected" class="schema-detected">Schema: not detected</p>
+        </div>
         <div class="or-divider">or</div>
         <div id="dropZone" class="drop-zone">
           <p>Drag and drop CSV files here</p>
-          <p class="drop-sub">Required: `invoice_headers.csv`, `invoice_lines.csv`, `invoice_vat_breakdown.csv`</p>
+          <p class="drop-sub">
+            Required for BRD view: `invoice_headers.csv`, `invoice_lines.csv`, `invoice_vat_breakdown.csv`
+          </p>
+          <p class="drop-sub">Or MoF view: `mof_schema_dataset.csv`</p>
           <input id="fileInput" type="file" multiple accept=".csv" />
         </div>
         <div id="preloadSummary" class="preload-summary"></div>
@@ -186,6 +199,13 @@
             <h4>Invoice Preview</h4>
             <div class="pdf-actions">
               <label>
+                Invoice Mode
+                <select id="invoiceMode">
+                  <option value="taxable">Taxable E-Invoice (Mandatory 4.1)</option>
+                  <option value="commercial">Commercial XML (Mandatory 1-51)</option>
+                </select>
+              </label>
+              <label>
                 PDF Scope
                 <select id="pdfScope">
                   <option value="selected">Selected Invoice</option>
@@ -203,6 +223,7 @@
           <p id="pdfHint" class="hint">PDF operations default to selected invoice only.</p>
           <iframe id="pdfPreviewFrame" class="pdf-frame" title="PDF Preview"></iframe>
           <div id="invoicePreview" class="invoice-preview"></div>
+          <div id="mandatoryMatrix" class="mandatory-matrix"></div>
         </div>
       </section>
     </main>
