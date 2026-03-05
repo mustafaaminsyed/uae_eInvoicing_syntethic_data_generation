@@ -22,6 +22,11 @@
       </section>
 
       <section class="loader-panel">
+        <h3>1. Dataset Loading</h3>
+        <p class="section-desc">
+          Load data either from a local run folder path or by dragging CSV files. The checklist shows what is required
+          and schema detection confirms what format the app recognized.
+        </p>
         <label for="datasetPath">Dataset Folder (relative to repo root)</label>
         <div class="loader-row">
           <input id="datasetPath" value="../output_pilot/run_20260305T222747Z_20260303" />
@@ -55,6 +60,13 @@
       </section>
 
       <section class="summary-grid">
+        <div class="section-block-head">
+          <h3>2. Summary Metrics</h3>
+          <p class="section-desc">
+            These cards show the currently filtered result, not the full dataset. Change filters to see metrics update
+            in real time.
+          </p>
+        </div>
         <article class="summary-card">
           <p>Total Documents</p>
           <h2 id="totalDocs">-</h2>
@@ -74,7 +86,11 @@
       </section>
 
       <section class="filters">
-        <h3>Filters</h3>
+        <h3>3. Filters</h3>
+        <p class="section-desc">
+          Use filters to narrow invoices before review, preview, and PDF export. Start broad, then refine by status,
+          type, tax profile, date range, and value band.
+        </p>
         <div class="filter-grid">
           <label>
             Search Invoice ID
@@ -91,11 +107,11 @@
             <span class="hint">Valid = no injected issue; Invalid = has scenario code.</span>
           </label>
           <label>
-            Invoice Type
+            Invoice Type (380 = Invoice, 381 = Credit Note)
             <select id="typeFilter">
               <option value="all">All</option>
-              <option value="380">380</option>
-              <option value="381">381</option>
+              <option value="380">380 - Invoice</option>
+              <option value="381">381 - Credit Note</option>
             </select>
             <span class="hint">380 is invoice, 381 is credit note.</span>
           </label>
@@ -107,12 +123,12 @@
             <span class="hint">Country code of the invoice buyer.</span>
           </label>
           <label>
-            Tax Category
+            Tax Category (S/Z/E)
             <select id="taxFilter">
               <option value="all">All</option>
-              <option value="S">S</option>
-              <option value="Z">Z</option>
-              <option value="E">E</option>
+              <option value="S">S - Standard Rated</option>
+              <option value="Z">Z - Zero Rated</option>
+              <option value="E">E - Exempt</option>
             </select>
             <span class="hint">S = standard, Z = zero, E = exempt.</span>
           </label>
@@ -157,7 +173,11 @@
       </section>
 
       <section class="table-panel">
-        <h3>Documents</h3>
+        <h3>4. Document Results</h3>
+        <p class="section-desc">
+          Click any row to inspect invoice details. The table reflects your current filter selection and drives the
+          preview and PDF tools below.
+        </p>
         <div class="table-wrap">
           <table>
             <thead>
@@ -179,7 +199,11 @@
       </section>
 
       <section class="detail-panel">
-        <h3 id="detailTitle">Invoice Details</h3>
+        <h3 id="detailTitle">5. Invoice Details</h3>
+        <p class="section-desc">
+          Review raw header/line/VAT JSON, then use Invoice Mode for mandatory-field checks and PDF output. Use section
+          expand/collapse controls to focus on what matters.
+        </p>
         <div class="detail-columns">
           <article>
             <h4>Header</h4>
