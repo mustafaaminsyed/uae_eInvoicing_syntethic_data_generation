@@ -281,6 +281,37 @@
             <p id="pdfHint" class="hint">PDF operations default to selected invoice only.</p>
             <iframe id="pdfPreviewFrame" class="pdf-frame" title="PDF Preview"></iframe>
             <div id="invoicePreview" class="invoice-preview"></div>
+            <div class="coverage-nav">
+              <h5>Coverage Navigator</h5>
+              <div class="coverage-grid">
+                <label>
+                  Invoice Selector
+                  <select id="coverageInvoiceSelect"></select>
+                </label>
+                <label>
+                  Coverage Filter
+                  <select id="coverageStatusFilter">
+                    <option value="all">All Invoices</option>
+                    <option value="missing">Missing Fields Only</option>
+                    <option value="complete">Fully Complete Only</option>
+                  </select>
+                </label>
+                <label>
+                  Sort
+                  <select id="coverageSort">
+                    <option value="missing_desc">Most Missing First</option>
+                    <option value="missing_asc">Least Missing First</option>
+                    <option value="invoice_asc">Invoice ID A-Z</option>
+                    <option value="invoice_desc">Invoice ID Z-A</option>
+                  </select>
+                </label>
+                <div class="coverage-actions">
+                  <button id="coveragePrevBtn" type="button">◀ Previous</button>
+                  <button id="coverageNextBtn" type="button">Next ▶</button>
+                </div>
+              </div>
+              <p id="coverageHint" class="hint">Select an invoice to inspect mandatory-field coverage.</p>
+            </div>
             <div id="mandatoryMatrix" class="mandatory-matrix"></div>
           </div>
         </div>

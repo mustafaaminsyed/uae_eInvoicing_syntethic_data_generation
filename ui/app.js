@@ -10,6 +10,8 @@ const state = {
   stagedFiles: null,
   sourceSchema: "unknown",
   mofRowsByInvoice: new Map(),
+  coverageStats: new Map(),
+  coverageInvoiceIds: [],
 };
 
 const $ = (id) => document.getElementById(id);
@@ -50,6 +52,12 @@ const nodes = {
   invoicePreview: $("invoicePreview"),
   mandatoryMatrix: $("mandatoryMatrix"),
   invoiceMode: $("invoiceMode"),
+  coverageInvoiceSelect: $("coverageInvoiceSelect"),
+  coverageStatusFilter: $("coverageStatusFilter"),
+  coverageSort: $("coverageSort"),
+  coveragePrevBtn: $("coveragePrevBtn"),
+  coverageNextBtn: $("coverageNextBtn"),
+  coverageHint: $("coverageHint"),
   pdfScope: $("pdfScope"),
   pdfMaxDocs: $("pdfMaxDocs"),
   previewPdfBtn: $("previewPdfBtn"),
@@ -255,6 +263,62 @@ function amountSegment(v) {
   return "large";
 }
 
+function recomputeCoverageForCurrentMode() {
+  state.coverageStats = new Map();
+  const fields = nodes.invoiceMode.value === "commercial" ? [...TAXABLE_FIELDS, ...COMMERCIAL_EXTRA_FIELDS] : TAXABLE_FIELDS;
+  state.headers.forEach((h) => {
+    const lines = state.linesByInvoice.get(h.InvoiceID) || [];
+    const vat = state.vatByInvoice.get(h.InvoiceID) || [];
+    const src = getInvoiceSourceObject(h, lines, vat);
+    const presentCount = fields.filter(([, , key]) => String(src[key] ?? "").trim() !== "").length;
+    state.coverageStats.set(h.InvoiceID, { presentCount, missingCount: fields.length - presentCount, total: fields.length });
+  });
+}
+
+function buildCoverageList() {
+  const status = nodes.coverageStatusFilter.value;
+  const sort = nodes.coverageSort.value;
+  let list = state.filtered.map((h) => h.InvoiceID);
+  if (status !== "all") {
+    list = list.filter((id) => {
+      const stat = state.coverageStats.get(id);
+      if (!stat) return false;
+      if (status === "missing") return stat.missingCount > 0;
+      return stat.missingCount === 0;
+    });
+  }
+  list.sort((a, b) => {
+    const sa = state.coverageStats.get(a) || { missingCount: 0 };
+    const sb = state.coverageStats.get(b) || { missingCount: 0 };
+    if (sort === "missing_desc") return sb.missingCount - sa.missingCount || a.localeCompare(b);
+    if (sort === "missing_asc") return sa.missingCount - sb.missingCount || a.localeCompare(b);
+    if (sort === "invoice_desc") return b.localeCompare(a);
+    return a.localeCompare(b);
+  });
+  state.coverageInvoiceIds = list;
+}
+
+function refreshCoverageNavigator() {
+  if (!nodes.coverageInvoiceSelect) return;
+  recomputeCoverageForCurrentMode();
+  buildCoverageList();
+  const options = state.coverageInvoiceIds
+    .map((id) => {
+      const stat = state.coverageStats.get(id) || { presentCount: 0, total: 0, missingCount: 0 };
+      return `<option value="${id}">${id} (${stat.presentCount}/${stat.total}, missing ${stat.missingCount})</option>`;
+    })
+    .join("");
+  nodes.coverageInvoiceSelect.innerHTML = options || `<option value="">No invoices in scope</option>`;
+  if (state.selectedInvoice && state.coverageInvoiceIds.includes(state.selectedInvoice)) {
+    nodes.coverageInvoiceSelect.value = state.selectedInvoice;
+  } else if (state.coverageInvoiceIds.length > 0) {
+    nodes.coverageInvoiceSelect.value = state.coverageInvoiceIds[0];
+  }
+  const noData = state.coverageInvoiceIds.length === 0;
+  nodes.coveragePrevBtn.disabled = noData;
+  nodes.coverageNextBtn.disabled = noData;
+}
+
 function applyFilters() {
   const query = nodes.searchInvoice.value.trim().toUpperCase();
   const status = nodes.statusFilter.value;
@@ -294,6 +358,7 @@ function applyFilters() {
 
   renderSummary(state.filtered);
   renderTable();
+  refreshCoverageNavigator();
 }
 
 function renderSummary(dataset) {
@@ -348,6 +413,9 @@ function selectInvoice(invoiceId) {
   nodes.vatDetail.textContent = JSON.stringify(vat, null, 2);
   renderInvoicePreview(header, lines, vat);
   renderMandatoryMatrix(header, lines, vat);
+  if (nodes.coverageInvoiceSelect && nodes.coverageInvoiceSelect.value !== invoiceId) {
+    nodes.coverageInvoiceSelect.value = invoiceId;
+  }
   renderTable();
 }
 
@@ -466,6 +534,11 @@ function renderMandatoryMatrix(header, lines, vatRows) {
     })
     .join("");
   const presentCount = fields.filter(([, , key]) => String(source[key] ?? "").trim() !== "").length;
+  const missingCount = fields.length - presentCount;
+  state.coverageStats.set(header.InvoiceID, { presentCount, missingCount, total: fields.length });
+  if (nodes.coverageHint) {
+    nodes.coverageHint.textContent = `Coverage for ${header.InvoiceID}: ${presentCount}/${fields.length} present, ${missingCount} missing.`;
+  }
   nodes.mandatoryMatrix.innerHTML = `
     <h5>
       Mandatory Field Coverage (${mode === "commercial" ? "Commercial XML 1-51" : "Taxable E-Invoice 1-41"}):
@@ -770,6 +843,7 @@ async function loadDataset() {
     }
     setUploadState("loaded", "Loaded from folder path");
     setStatus(`Loaded ${state.headers.length} headers, ${state.lines.length} lines.`);
+    refreshCoverageNavigator();
   } catch (err) {
     setUploadState("error", "Load failed");
     setStatus(`Load failed: ${err.message}. Run via local server (not file://).`, true);
@@ -950,6 +1024,7 @@ function loadStagedDataset() {
   if (state.filtered.length > 0) selectInvoice(state.filtered[0].InvoiceID);
   setUploadState("loaded", "Staged files loaded");
   setStatus(`Loaded staged dataset: ${state.headers.length} headers, ${state.lines.length} lines.`);
+  refreshCoverageNavigator();
   return true;
 }
 
@@ -1004,6 +1079,25 @@ function wireEvents() {
         renderMandatoryMatrix(header, lines, vat);
       }
     }
+    refreshCoverageNavigator();
+  });
+  nodes.coverageStatusFilter.addEventListener("change", refreshCoverageNavigator);
+  nodes.coverageSort.addEventListener("change", refreshCoverageNavigator);
+  nodes.coverageInvoiceSelect.addEventListener("change", () => {
+    const id = nodes.coverageInvoiceSelect.value;
+    if (id) selectInvoice(id);
+  });
+  nodes.coveragePrevBtn.addEventListener("click", () => {
+    if (!state.selectedInvoice || state.coverageInvoiceIds.length === 0) return;
+    const idx = state.coverageInvoiceIds.indexOf(state.selectedInvoice);
+    const nextIdx = idx <= 0 ? 0 : idx - 1;
+    selectInvoice(state.coverageInvoiceIds[nextIdx]);
+  });
+  nodes.coverageNextBtn.addEventListener("click", () => {
+    if (!state.selectedInvoice || state.coverageInvoiceIds.length === 0) return;
+    const idx = state.coverageInvoiceIds.indexOf(state.selectedInvoice);
+    const nextIdx = idx < 0 ? 0 : Math.min(state.coverageInvoiceIds.length - 1, idx + 1);
+    selectInvoice(state.coverageInvoiceIds[nextIdx]);
   });
   document.querySelectorAll(".panel-toggle").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -1012,6 +1106,7 @@ function wireEvents() {
       if (!panelBody) return;
       const isCollapsed = panelBody.classList.toggle("collapsed");
       btn.textContent = isCollapsed ? "▸" : "▾";
+      btn.textContent = isCollapsed ? ">" : "v";
       btn.setAttribute("aria-expanded", String(!isCollapsed));
     });
   });

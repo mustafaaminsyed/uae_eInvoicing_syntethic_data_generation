@@ -617,6 +617,31 @@ pre {
   }
 }
 
+.coverage-nav {
+  margin-top: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fbfffb;
+  padding: 0.75rem;
+}
+
+.coverage-nav h5 {
+  margin: 0 0 0.45rem;
+  font-size: 0.95rem;
+}
+
+.coverage-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(170px, 1fr));
+  gap: 0.55rem;
+}
+
+.coverage-actions {
+  display: flex;
+  align-items: end;
+  gap: 0.45rem;
+}
+
 @media (max-width: 1040px) {
   .hero {
     grid-template-columns: 1fr;
@@ -638,6 +663,10 @@ pre {
   .pdf-actions {
     width: 100%;
   }
+
+  .coverage-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 @media (max-width: 640px) {
@@ -647,5 +676,9 @@ pre {
   }
   .loader-row {
     flex-direction: column;
+  }
+
+  .coverage-grid {
+    grid-template-columns: 1fr;
   }
 }
