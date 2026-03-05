@@ -12,6 +12,7 @@ This repository contains working artifacts for a UAE e-invoicing synthetic datas
 The generator script:
 
 - `generate_uae_einvoicing_dataset.py`
+- `generate_mof_schema_dataset.py`
 
 produces a delivery package per run with:
 
@@ -21,6 +22,13 @@ produces a delivery package per run with:
 - `customers.csv`
 - `items.csv`
 - `error_scenarios.csv`
+- `generation_config.json`
+- `run_manifest.json`
+- `README.md` (run-level)
+
+MoF schema-first runs additionally produce:
+
+- `mof_schema_dataset.csv` (flat row-per-line file aligned to 51 mandatory MoF fields)
 - `generation_config.json`
 - `run_manifest.json`
 - `README.md` (run-level)
@@ -39,6 +47,30 @@ Observed gate results:
 - configured invalid share achieved (`4%`)
 - valid-document reconciliation failures: `0` across pilot, medium, and full runs
 
+## MoF Schema-First Runs
+
+To align with the updated UAE MoF JSON schema, a dedicated generator was added:
+
+- `generate_mof_schema_dataset.py`
+
+This generator:
+
+- emits all 51 mandatory MoF field columns in a single flat dataset,
+- supports controlled positive/negative scenario distribution,
+- labels failing records with `error_scenario_code`.
+
+Generated outputs are under `output_mof/`:
+
+- `mof_run_20260305T224707Z_20260306` (pilot)
+- `mof_run_20260305T224744Z_20260306` (full)
+
+Current full MoF run profile:
+
+- total documents: `5,000`
+- positive documents: `4,250` (`85%`)
+- negative documents: `750` (`15%`)
+- positive reconciliation failures: `0`
+
 ## How To Generate
 
 From repository root:
@@ -47,12 +79,13 @@ From repository root:
 python generate_uae_einvoicing_dataset.py --n-documents 100 --output-dir output_pilot
 python generate_uae_einvoicing_dataset.py --n-documents 1000 --output-dir output_pilot
 python generate_uae_einvoicing_dataset.py --n-documents 5000 --output-dir output_pilot
+python generate_mof_schema_dataset.py --n-documents 5000 --invalid-share 0.15 --output-dir output_mof
 ```
 
 ## Schema Alignment Status
 
-The current generator baseline aligns with the cleaned BRD and supports structured positive and negative testing.
-Alignment against the latest MoF-style 51-field schema is partial and requires a schema-first enhancement pass to add missing compliance fields and explicit rule-level outputs.
+The BRD-baseline generator (`generate_uae_einvoicing_dataset.py`) supports structured positive and negative testing for the cleaned BRD model.
+The MoF-schema-first generator (`generate_mof_schema_dataset.py`) is used for explicit 51-field mandatory schema alignment scenarios.
 
 ## Branch and Version Control
 
