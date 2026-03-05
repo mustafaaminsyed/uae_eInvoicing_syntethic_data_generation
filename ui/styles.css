@@ -458,6 +458,34 @@ pre {
   font-size: 0.95rem;
 }
 
+.preview-sections {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.preview-section {
+  border: 1px solid #dbe8dd;
+  border-radius: 10px;
+  background: #fcfffc;
+}
+
+.preview-section > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 0.45rem 0.6rem;
+  font-weight: 700;
+  color: #2b4e3a;
+  border-bottom: 1px solid #e7f0e9;
+}
+
+.preview-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.preview-section > div {
+  padding: 0.55rem 0.6rem;
+}
+
 .mandatory-table {
   width: 100%;
   border-collapse: collapse;

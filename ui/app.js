@@ -352,12 +352,12 @@ function selectInvoice(invoiceId) {
 }
 
 function getInvoiceSourceObject(header, lines, vatRows) {
+  const firstLine = lines[0] || {};
+  const firstVat = vatRows[0] || {};
   if (state.sourceSchema === "mof") {
     const src = state.mofRowsByInvoice.get(header.InvoiceID) || [];
     return src[0] || {};
   }
-  const firstLine = lines[0] || {};
-  const firstVat = vatRows[0] || {};
   return {
     invoice_number: header.InvoiceID,
     invoice_date: header.IssueDate,
@@ -368,19 +368,19 @@ function getInvoiceSourceObject(header, lines, vatRows) {
     business_process_type: "",
     specification_identifier: "",
     payment_means_type_code: header.PaymentTermCode || "",
-    seller_name: "Synthetic Seller",
+    seller_name: header.SellerID || "Synthetic Seller",
     seller_electronic_address: "",
     seller_electronic_identifier: "",
     seller_legal_registration_identifier: "",
     seller_legal_registration_identifier_type: "",
-    seller_tax_registration_identifier: header.SellerTRN,
+    seller_tax_registration_identifier: header.SellerTRN || "",
     seller_tax_scheme_code: "VAT",
     seller_address_line_1: "",
     seller_city: "",
     seller_country_subdivision: "",
     seller_country_code: "AE",
     buyer_name: header.BuyerID,
-    buyer_electronic_address: "",
+    buyer_electronic_address: header.BuyerTRN || "",
     buyer_electronic_identifier: "",
     buyer_legal_registration_identifier: "",
     buyer_legal_registration_identifier_type: "",
@@ -403,7 +403,7 @@ function getInvoiceSourceObject(header, lines, vatRows) {
     invoice_line_net_amount: firstLine.LineExtensionAmount || "",
     item_net_price: firstLine.UnitPrice || "",
     item_gross_price: "",
-    item_price_base_quantity: "",
+    item_price_base_quantity: "1.000",
     invoiced_item_tax_category_code: firstLine.TaxCategory || "",
     invoiced_item_tax_rate: firstLine.TaxRate || "",
     vat_line_amount_in_aed: firstLine.TaxAmount || "",
@@ -411,6 +411,41 @@ function getInvoiceSourceObject(header, lines, vatRows) {
     item_name: firstLine.ItemDescription || "",
     item_description: firstLine.ItemDescription || "",
   };
+}
+
+function getInvoiceLineModeRows(header, lines) {
+  if (state.sourceSchema === "mof") {
+    return (state.mofRowsByInvoice.get(header.InvoiceID) || []).map((r) => ({
+      invoice_line_identifier: r.invoice_line_identifier,
+      item_name: r.item_name,
+      item_description: r.item_description,
+      invoiced_quantity: r.invoiced_quantity,
+      unit_of_measure_code: r.unit_of_measure_code,
+      invoice_line_net_amount: r.invoice_line_net_amount,
+      item_net_price: r.item_net_price,
+      item_gross_price: r.item_gross_price,
+      item_price_base_quantity: r.item_price_base_quantity,
+      invoiced_item_tax_category_code: r.invoiced_item_tax_category_code,
+      invoiced_item_tax_rate: r.invoiced_item_tax_rate,
+      vat_line_amount_in_aed: r.vat_line_amount_in_aed,
+      invoice_line_amount_in_aed: r.invoice_line_amount_in_aed,
+    }));
+  }
+  return lines.map((ln) => ({
+    invoice_line_identifier: ln.LineNumber,
+    item_name: ln.ItemDescription,
+    item_description: ln.ItemDescription,
+    invoiced_quantity: ln.Quantity,
+    unit_of_measure_code: ln.UnitOfMeasure,
+    invoice_line_net_amount: ln.LineExtensionAmount,
+    item_net_price: ln.UnitPrice,
+    item_gross_price: "",
+    item_price_base_quantity: "1.000",
+    invoiced_item_tax_category_code: ln.TaxCategory,
+    invoiced_item_tax_rate: ln.TaxRate,
+    vat_line_amount_in_aed: ln.TaxAmount,
+    invoice_line_amount_in_aed: "",
+  }));
 }
 
 function renderMandatoryMatrix(header, lines, vatRows) {
@@ -450,18 +485,42 @@ function renderInvoicePreview(header, lines, vatRows) {
     nodes.invoicePreview.innerHTML = "";
     return;
   }
-  const lineRows = lines
-    .map(
-      (ln) => `<tr>
-        <td>${ln.LineNumber}</td>
-        <td>${ln.ItemDescription}</td>
-        <td>${ln.Quantity}</td>
-        <td>${ln.UnitPrice}</td>
-        <td>${ln.TaxCategory}</td>
-        <td>${ln.LineExtensionAmount}</td>
+  const mode = nodes.invoiceMode.value;
+  const src = getInvoiceSourceObject(header, lines, vatRows);
+  const modeLines = getInvoiceLineModeRows(header, lines);
+  const lineRows =
+    mode === "commercial"
+      ? modeLines
+          .map(
+            (ln) => `<tr>
+        <td>${ln.invoice_line_identifier}</td>
+        <td>${ln.item_name}</td>
+        <td>${ln.item_description}</td>
+        <td>${ln.invoiced_quantity}</td>
+        <td>${ln.unit_of_measure_code}</td>
+        <td>${ln.item_net_price || "-"}</td>
+        <td>${ln.item_gross_price || "-"}</td>
+        <td>${ln.item_price_base_quantity || "-"}</td>
+        <td>${ln.invoiced_item_tax_category_code}</td>
+        <td>${ln.invoiced_item_tax_rate}</td>
+        <td>${ln.vat_line_amount_in_aed || "-"}</td>
+        <td>${ln.invoice_line_amount_in_aed || "-"}</td>
       </tr>`,
-    )
-    .join("");
+          )
+          .join("")
+      : modeLines
+          .map(
+            (ln) => `<tr>
+        <td>${ln.invoice_line_identifier}</td>
+        <td>${ln.item_description}</td>
+        <td>${ln.invoiced_quantity}</td>
+        <td>${ln.unit_of_measure_code}</td>
+        <td>${ln.invoice_line_net_amount}</td>
+        <td>${ln.invoiced_item_tax_category_code}</td>
+        <td>${ln.invoiced_item_tax_rate}</td>
+      </tr>`,
+          )
+          .join("");
   const vatRowsHtml = vatRows
     .map(
       (v) => `<tr>
@@ -476,38 +535,77 @@ function renderInvoicePreview(header, lines, vatRows) {
   nodes.invoicePreview.innerHTML = `
     <div class="preview-header">
       <div>
-        <h4 style="margin:0;">Tax Invoice</h4>
+        <h4 style="margin:0;">${mode === "commercial" ? "Commercial XML Invoice Preview" : "Taxable E-Invoice Preview"}</h4>
         <div style="font-size:0.83rem;color:#456356;">${header.InvoiceID}</div>
       </div>
       <img class="preview-logo" src="./assets/dariba-tech-logo.png" alt="Dariba Tech" />
     </div>
-    <div class="preview-grid">
-      <div><strong>Issue Date:</strong> ${header.IssueDate}</div>
-      <div><strong>Due Date:</strong> ${header.DueDate}</div>
-      <div><strong>Buyer ID:</strong> ${header.BuyerID}</div>
-      <div><strong>Country:</strong> ${header.BuyerCountry}</div>
-      <div><strong>Type:</strong> ${header.InvoiceTypeCode}</div>
-      <div><strong>Status:</strong> ${header.InvoiceStatus}</div>
-    </div>
-    <table class="preview-table">
-      <thead>
-        <tr><th>#</th><th>Description</th><th>Qty</th><th>Unit Price</th><th>Tax</th><th>Line Amount</th></tr>
-      </thead>
-      <tbody>${lineRows}</tbody>
-    </table>
-    <div style="height:0.65rem;"></div>
-    <table class="preview-table">
-      <thead>
-        <tr><th>Tax Cat</th><th>Rate</th><th>Taxable</th><th>Tax</th></tr>
-      </thead>
-      <tbody>${vatRowsHtml}</tbody>
-    </table>
-    <div style="height:0.65rem;"></div>
-    <div class="preview-grid">
-      <div><strong>Tax Exclusive:</strong> ${header.TaxExclusiveAmount}</div>
-      <div><strong>Tax Amount:</strong> ${header.TaxAmount}</div>
-      <div><strong>Tax Inclusive:</strong> ${header.TaxInclusiveAmount}</div>
-      <div><strong>Payable:</strong> ${header.PayableAmount}</div>
+    <div class="preview-sections">
+      <details class="preview-section" open>
+        <summary>Document Header</summary>
+        <div class="preview-grid">
+          <div><strong>Invoice No:</strong> ${src.invoice_number || header.InvoiceID}</div>
+          <div><strong>Invoice Date:</strong> ${src.invoice_date || header.IssueDate}</div>
+          <div><strong>Type Code:</strong> ${src.invoice_type_code || header.InvoiceTypeCode}</div>
+          <div><strong>Currency:</strong> ${src.invoice_currency_code || header.CurrencyCode}</div>
+          <div><strong>Transaction Type:</strong> ${src.invoice_transaction_type_code || "-"}</div>
+          <div><strong>Due Date:</strong> ${src.payment_due_date || header.DueDate}</div>
+          <div><strong>Business Process:</strong> ${src.business_process_type || "-"}</div>
+          <div><strong>Specification ID:</strong> ${src.specification_identifier || "-"}</div>
+          <div><strong>Payment Means:</strong> ${src.payment_means_type_code || "-"}</div>
+          <div><strong>Status:</strong> ${header.InvoiceStatus || "ISSUED"}</div>
+        </div>
+      </details>
+      <details class="preview-section" open>
+        <summary>Seller / Buyer</summary>
+        <div class="preview-grid">
+          <div><strong>Seller Name:</strong> ${src.seller_name || "-"}</div>
+          <div><strong>Seller Tax ID:</strong> ${src.seller_tax_registration_identifier || "-"}</div>
+          <div><strong>Seller e-Address:</strong> ${src.seller_electronic_address || "-"}</div>
+          <div><strong>Seller Scheme:</strong> ${src.seller_electronic_identifier || "-"}</div>
+          <div><strong>Seller City:</strong> ${src.seller_city || "-"}</div>
+          <div><strong>Seller Country:</strong> ${src.seller_country_code || "-"}</div>
+          <div><strong>Buyer Name:</strong> ${src.buyer_name || "-"}</div>
+          <div><strong>Buyer Country:</strong> ${src.buyer_country_code || "-"}</div>
+          <div><strong>Buyer e-Address:</strong> ${src.buyer_electronic_address || "-"}</div>
+          <div><strong>Buyer e-Identifier:</strong> ${src.buyer_electronic_identifier || "-"}</div>
+        </div>
+      </details>
+      <details class="preview-section" open>
+        <summary>Invoice Lines (${mode === "commercial" ? "Commercial 4.2 Expanded" : "Taxable 4.1 Core"})</summary>
+        <div>
+          <table class="preview-table">
+            <thead>
+              ${
+                mode === "commercial"
+                  ? "<tr><th>#</th><th>Item</th><th>Description</th><th>Qty</th><th>UoM</th><th>Item Net</th><th>Item Gross</th><th>Base Qty</th><th>Tax Cat</th><th>Rate</th><th>VAT AED</th><th>Line AED</th></tr>"
+                  : "<tr><th>#</th><th>Description</th><th>Qty</th><th>UoM</th><th>Line Net</th><th>Tax Cat</th><th>Rate</th></tr>"
+              }
+            </thead>
+            <tbody>${lineRows}</tbody>
+          </table>
+        </div>
+      </details>
+      <details class="preview-section" open>
+        <summary>VAT Breakdown</summary>
+        <div>
+          <table class="preview-table">
+            <thead>
+              <tr><th>Tax Cat</th><th>Rate</th><th>Taxable</th><th>Tax</th></tr>
+            </thead>
+            <tbody>${vatRowsHtml}</tbody>
+          </table>
+        </div>
+      </details>
+      <details class="preview-section" open>
+        <summary>Totals</summary>
+        <div class="preview-grid">
+          <div><strong>Tax Exclusive:</strong> ${src.invoice_total_amount_without_tax || header.TaxExclusiveAmount}</div>
+          <div><strong>Tax Amount:</strong> ${src.invoice_total_tax_amount || header.TaxAmount}</div>
+          <div><strong>Tax Inclusive:</strong> ${src.invoice_total_amount_with_tax || header.TaxInclusiveAmount}</div>
+          <div><strong>Payable:</strong> ${src.amount_due_for_payment || header.PayableAmount}</div>
+        </div>
+      </details>
     </div>
   `;
 }
@@ -553,31 +651,38 @@ function buildPdf(headers) {
     setStatus("PDF library not loaded.", true);
     return null;
   }
+  const mode = nodes.invoiceMode.value;
   const doc = new jsPDF();
   headers.forEach((header, idx) => {
     if (idx > 0) doc.addPage();
     const lines = state.linesByInvoice.get(header.InvoiceID) || [];
     const vats = state.vatByInvoice.get(header.InvoiceID) || [];
+    const src = getInvoiceSourceObject(header, lines, vats);
+    const modeLines = getInvoiceLineModeRows(header, lines);
     let y = 14;
     doc.setFontSize(16);
-    doc.text("Dariba Tech - Synthetic Tax Invoice", 14, y);
+    doc.text(`Dariba Tech - ${mode === "commercial" ? "Commercial XML" : "Taxable E-Invoice"}`, 14, y);
     y += 8;
     doc.setFontSize(10);
-    doc.text(`Invoice ID: ${header.InvoiceID}`, 14, y);
-    doc.text(`Type: ${header.InvoiceTypeCode}`, 130, y);
+    doc.text(`Invoice ID: ${src.invoice_number || header.InvoiceID}`, 14, y);
+    doc.text(`Type: ${src.invoice_type_code || header.InvoiceTypeCode}`, 130, y);
     y += 6;
-    doc.text(`Issue Date: ${header.IssueDate}`, 14, y);
-    doc.text(`Due Date: ${header.DueDate}`, 130, y);
+    doc.text(`Issue Date: ${src.invoice_date || header.IssueDate}`, 14, y);
+    doc.text(`Due Date: ${src.payment_due_date || header.DueDate}`, 130, y);
     y += 6;
-    doc.text(`Buyer: ${header.BuyerID} (${header.BuyerCountry})`, 14, y);
+    doc.text(`Seller: ${src.seller_name || "-"} | Tax ID: ${src.seller_tax_registration_identifier || "-"}`, 14, y);
     y += 6;
-    doc.text(`Mandatory Mode: ${nodes.invoiceMode.value === "commercial" ? "Commercial XML (1-51)" : "Taxable E-Invoice (1-41)"}`, 14, y);
+    doc.text(`Buyer: ${src.buyer_name || header.BuyerID} (${src.buyer_country_code || header.BuyerCountry})`, 14, y);
     y += 8;
     doc.text("Lines:", 14, y);
     y += 6;
-    lines.forEach((ln) => {
+    modeLines.forEach((ln) => {
+      const lineText =
+        mode === "commercial"
+          ? `${ln.invoice_line_identifier}. ${ln.item_name} | Qty ${ln.invoiced_quantity} ${ln.unit_of_measure_code} | Net ${ln.item_net_price || "-"} | Gross ${ln.item_gross_price || "-"} | Tax ${ln.invoiced_item_tax_category_code}@${ln.invoiced_item_tax_rate}`
+          : `${ln.invoice_line_identifier}. ${ln.item_description} | Qty ${ln.invoiced_quantity} | Tax ${ln.invoiced_item_tax_category_code}@${ln.invoiced_item_tax_rate} | Line ${ln.invoice_line_net_amount}`;
       doc.text(
-        `${ln.LineNumber}. ${ln.ItemDescription} | Qty ${ln.Quantity} | Tax ${ln.TaxCategory} | AED ${ln.LineExtensionAmount}`,
+        lineText,
         14,
         y,
       );
@@ -599,13 +704,13 @@ function buildPdf(headers) {
       }
     });
     y += 4;
-    doc.text(`Tax Exclusive: ${header.TaxExclusiveAmount}`, 14, y);
+    doc.text(`Tax Exclusive: ${src.invoice_total_amount_without_tax || header.TaxExclusiveAmount}`, 14, y);
     y += 5;
-    doc.text(`Tax Amount: ${header.TaxAmount}`, 14, y);
+    doc.text(`Tax Amount: ${src.invoice_total_tax_amount || header.TaxAmount}`, 14, y);
     y += 5;
-    doc.text(`Tax Inclusive: ${header.TaxInclusiveAmount}`, 14, y);
+    doc.text(`Tax Inclusive: ${src.invoice_total_amount_with_tax || header.TaxInclusiveAmount}`, 14, y);
     y += 5;
-    doc.text(`Payable: ${header.PayableAmount}`, 14, y);
+    doc.text(`Payable: ${src.amount_due_for_payment || header.PayableAmount}`, 14, y);
   });
   return doc;
 }
@@ -894,7 +999,10 @@ function wireEvents() {
       const header = state.headers.find((h) => h.InvoiceID === state.selectedInvoice);
       const lines = state.linesByInvoice.get(state.selectedInvoice) || [];
       const vat = state.vatByInvoice.get(state.selectedInvoice) || [];
-      if (header) renderMandatoryMatrix(header, lines, vat);
+      if (header) {
+        renderInvoicePreview(header, lines, vat);
+        renderMandatoryMatrix(header, lines, vat);
+      }
     }
   });
 }
