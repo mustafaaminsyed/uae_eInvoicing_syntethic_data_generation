@@ -184,8 +184,24 @@
         <div class="invoice-preview-wrap">
           <div class="preview-head">
             <h4>Invoice Preview</h4>
-            <button id="downloadPdfBtn" type="button">Download PDF</button>
+            <div class="pdf-actions">
+              <label>
+                PDF Scope
+                <select id="pdfScope">
+                  <option value="selected">Selected Invoice</option>
+                  <option value="filtered">Filtered Invoices</option>
+                </select>
+              </label>
+              <label>
+                Max Docs
+                <input id="pdfMaxDocs" type="number" min="1" max="50" value="10" />
+              </label>
+              <button id="previewPdfBtn" type="button">Preview PDF</button>
+              <button id="downloadPdfBtn" type="button">Download PDF</button>
+            </div>
           </div>
+          <p id="pdfHint" class="hint">PDF operations default to selected invoice only.</p>
+          <iframe id="pdfPreviewFrame" class="pdf-frame" title="PDF Preview"></iframe>
           <div id="invoicePreview" class="invoice-preview"></div>
         </div>
       </section>

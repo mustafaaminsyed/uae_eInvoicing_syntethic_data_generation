@@ -41,7 +41,12 @@ const nodes = {
   linesDetail: $("linesDetail"),
   vatDetail: $("vatDetail"),
   invoicePreview: $("invoicePreview"),
+  pdfScope: $("pdfScope"),
+  pdfMaxDocs: $("pdfMaxDocs"),
+  previewPdfBtn: $("previewPdfBtn"),
   downloadPdfBtn: $("downloadPdfBtn"),
+  pdfHint: $("pdfHint"),
+  pdfPreviewFrame: $("pdfPreviewFrame"),
 };
 
 function parseCSV(content) {
@@ -335,66 +340,112 @@ function renderInvoicePreview(header, lines, vatRows) {
 }
 
 function downloadSelectedInvoicePdf() {
-  const header = state.headers.find((h) => h.InvoiceID === state.selectedInvoice);
-  if (!header) {
-    setStatus("Select an invoice first to download PDF.", true);
+  const selection = resolvePdfSelection();
+  if (!selection.ok) {
+    setStatus(selection.message, true);
     return;
   }
-  const lines = state.linesByInvoice.get(header.InvoiceID) || [];
-  const vats = state.vatByInvoice.get(header.InvoiceID) || [];
+  const doc = buildPdf(selection.headers);
+  if (!doc) return;
+  const suffix = selection.headers.length > 1 ? "_batch" : `_${selection.headers[0].InvoiceID}`;
+  doc.save(`dariba_synthetic_invoice${suffix}.pdf`);
+  setStatus(`Downloaded PDF for ${selection.headers.length} document(s).`);
+}
+
+function resolvePdfSelection() {
+  const scope = nodes.pdfScope.value;
+  const maxDocs = Math.max(1, Math.min(50, Number(nodes.pdfMaxDocs.value) || 1));
+  nodes.pdfMaxDocs.value = String(maxDocs);
+
+  if (scope === "selected") {
+    const header = state.headers.find((h) => h.InvoiceID === state.selectedInvoice);
+    if (!header) {
+      return { ok: false, message: "Select an invoice first for PDF actions." };
+    }
+    nodes.pdfHint.textContent = "PDF scope: selected invoice.";
+    return { ok: true, headers: [header], maxDocs };
+  }
+
+  if (state.filtered.length === 0) {
+    return { ok: false, message: "No filtered invoices available for PDF generation." };
+  }
+  const picked = state.filtered.slice(0, maxDocs);
+  nodes.pdfHint.textContent = `PDF scope: filtered invoices. Using ${picked.length} of ${state.filtered.length} (max ${maxDocs}).`;
+  return { ok: true, headers: picked, maxDocs };
+}
+
+function buildPdf(headers) {
   const jsPDF = window.jspdf?.jsPDF;
   if (!jsPDF) {
     setStatus("PDF library not loaded.", true);
-    return;
+    return null;
   }
   const doc = new jsPDF();
-  let y = 14;
-  doc.setFontSize(16);
-  doc.text("Dariba Tech - Synthetic Tax Invoice", 14, y);
-  y += 8;
-  doc.setFontSize(10);
-  doc.text(`Invoice ID: ${header.InvoiceID}`, 14, y);
-  doc.text(`Type: ${header.InvoiceTypeCode}`, 130, y);
-  y += 6;
-  doc.text(`Issue Date: ${header.IssueDate}`, 14, y);
-  doc.text(`Due Date: ${header.DueDate}`, 130, y);
-  y += 6;
-  doc.text(`Buyer: ${header.BuyerID} (${header.BuyerCountry})`, 14, y);
-  y += 8;
-  doc.text("Lines:", 14, y);
-  y += 6;
-  lines.forEach((ln) => {
-    doc.text(
-      `${ln.LineNumber}. ${ln.ItemDescription} | Qty ${ln.Quantity} | Tax ${ln.TaxCategory} | AED ${ln.LineExtensionAmount}`,
-      14,
-      y,
-    );
+  headers.forEach((header, idx) => {
+    if (idx > 0) doc.addPage();
+    const lines = state.linesByInvoice.get(header.InvoiceID) || [];
+    const vats = state.vatByInvoice.get(header.InvoiceID) || [];
+    let y = 14;
+    doc.setFontSize(16);
+    doc.text("Dariba Tech - Synthetic Tax Invoice", 14, y);
+    y += 8;
+    doc.setFontSize(10);
+    doc.text(`Invoice ID: ${header.InvoiceID}`, 14, y);
+    doc.text(`Type: ${header.InvoiceTypeCode}`, 130, y);
+    y += 6;
+    doc.text(`Issue Date: ${header.IssueDate}`, 14, y);
+    doc.text(`Due Date: ${header.DueDate}`, 130, y);
+    y += 6;
+    doc.text(`Buyer: ${header.BuyerID} (${header.BuyerCountry})`, 14, y);
+    y += 8;
+    doc.text("Lines:", 14, y);
+    y += 6;
+    lines.forEach((ln) => {
+      doc.text(
+        `${ln.LineNumber}. ${ln.ItemDescription} | Qty ${ln.Quantity} | Tax ${ln.TaxCategory} | AED ${ln.LineExtensionAmount}`,
+        14,
+        y,
+      );
+      y += 5;
+      if (y > 270) {
+        doc.addPage();
+        y = 14;
+      }
+    });
+    y += 3;
+    doc.text("VAT Breakdown:", 14, y);
+    y += 6;
+    vats.forEach((v) => {
+      doc.text(`Category ${v.TaxCategory} @ ${v.TaxRate}% | Taxable ${v.TaxableAmount} | Tax ${v.TaxAmount}`, 14, y);
+      y += 5;
+      if (y > 270) {
+        doc.addPage();
+        y = 14;
+      }
+    });
+    y += 4;
+    doc.text(`Tax Exclusive: ${header.TaxExclusiveAmount}`, 14, y);
     y += 5;
-    if (y > 270) {
-      doc.addPage();
-      y = 14;
-    }
-  });
-  y += 3;
-  doc.text("VAT Breakdown:", 14, y);
-  y += 6;
-  vats.forEach((v) => {
-    doc.text(`Category ${v.TaxCategory} @ ${v.TaxRate}% | Taxable ${v.TaxableAmount} | Tax ${v.TaxAmount}`, 14, y);
+    doc.text(`Tax Amount: ${header.TaxAmount}`, 14, y);
     y += 5;
-    if (y > 270) {
-      doc.addPage();
-      y = 14;
-    }
+    doc.text(`Tax Inclusive: ${header.TaxInclusiveAmount}`, 14, y);
+    y += 5;
+    doc.text(`Payable: ${header.PayableAmount}`, 14, y);
   });
-  y += 4;
-  doc.text(`Tax Exclusive: ${header.TaxExclusiveAmount}`, 14, y);
-  y += 5;
-  doc.text(`Tax Amount: ${header.TaxAmount}`, 14, y);
-  y += 5;
-  doc.text(`Tax Inclusive: ${header.TaxInclusiveAmount}`, 14, y);
-  y += 5;
-  doc.text(`Payable: ${header.PayableAmount}`, 14, y);
-  doc.save(`${header.InvoiceID}.pdf`);
+  return doc;
+}
+
+function previewPdf() {
+  const selection = resolvePdfSelection();
+  if (!selection.ok) {
+    setStatus(selection.message, true);
+    return;
+  }
+  const doc = buildPdf(selection.headers);
+  if (!doc) return;
+  const blobUrl = doc.output("bloburl");
+  nodes.pdfPreviewFrame.src = blobUrl;
+  setStatus(`Preview generated for ${selection.headers.length} document(s).`);
 }
 
 async function loadDataset() {
@@ -501,6 +552,7 @@ function wireEvents() {
       await loadDataset();
     }
   });
+  nodes.previewPdfBtn.addEventListener("click", previewPdf);
   nodes.downloadPdfBtn.addEventListener("click", downloadSelectedInvoicePdf);
   [
     nodes.searchInvoice,
@@ -528,7 +580,15 @@ function wireEvents() {
   nodes.fileInput.addEventListener("change", async (e) => {
     await stageFromFiles(e.target.files);
   });
+  nodes.pdfScope.addEventListener("change", () => {
+    const selectedOnly = nodes.pdfScope.value === "selected";
+    nodes.pdfMaxDocs.disabled = selectedOnly;
+    nodes.pdfHint.textContent = selectedOnly
+      ? "PDF scope: selected invoice only."
+      : "PDF scope: filtered invoices. Max docs applies.";
+  });
 }
 
 wireEvents();
 setUploadState("idle", "No files staged");
+nodes.pdfMaxDocs.disabled = true;
