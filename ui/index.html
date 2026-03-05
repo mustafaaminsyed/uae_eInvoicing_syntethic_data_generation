@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UAE E-Invoicing Synthetic Data Viewer</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero">
+        <p class="eyebrow">Synthetic Data Explorer</p>
+        <h1>UAE E-Invoice Dataset Viewer</h1>
+        <p class="subtitle">
+          Filter by invoice type, tax category, country, status, date, amount range, and scenario code.
+        </p>
+      </section>
+
+      <section class="loader-panel">
+        <label for="datasetPath">Dataset Folder (relative to repo root)</label>
+        <div class="loader-row">
+          <input id="datasetPath" value="../output_pilot/run_20260305T222747Z_20260303" />
+          <button id="loadBtn">Load Dataset</button>
+        </div>
+        <p id="statusText" class="status">Ready</p>
+      </section>
+
+      <section class="summary-grid">
+        <article class="summary-card">
+          <p>Total Documents</p>
+          <h2 id="totalDocs">-</h2>
+        </article>
+        <article class="summary-card">
+          <p>Invoices (380)</p>
+          <h2 id="invoice380">-</h2>
+        </article>
+        <article class="summary-card">
+          <p>Credit Notes (381)</p>
+          <h2 id="invoice381">-</h2>
+        </article>
+        <article class="summary-card">
+          <p>Invalid Documents</p>
+          <h2 id="invalidDocs">-</h2>
+        </article>
+      </section>
+
+      <section class="filters">
+        <h3>Filters</h3>
+        <div class="filter-grid">
+          <label>
+            Search Invoice ID
+            <input id="searchInvoice" placeholder="INV-2025-000123" />
+          </label>
+          <label>
+            Status
+            <select id="statusFilter">
+              <option value="all">All</option>
+              <option value="valid">Valid Only</option>
+              <option value="invalid">Invalid Only</option>
+            </select>
+          </label>
+          <label>
+            Invoice Type
+            <select id="typeFilter">
+              <option value="all">All</option>
+              <option value="380">380</option>
+              <option value="381">381</option>
+            </select>
+          </label>
+          <label>
+            Buyer Country
+            <select id="countryFilter">
+              <option value="all">All</option>
+            </select>
+          </label>
+          <label>
+            Tax Category
+            <select id="taxFilter">
+              <option value="all">All</option>
+              <option value="S">S</option>
+              <option value="Z">Z</option>
+              <option value="E">E</option>
+            </select>
+          </label>
+          <label>
+            Scenario Code
+            <select id="scenarioFilter">
+              <option value="all">All</option>
+            </select>
+          </label>
+          <label>
+            Date From
+            <input type="date" id="dateFrom" />
+          </label>
+          <label>
+            Date To
+            <input type="date" id="dateTo" />
+          </label>
+          <label>
+            Min Payable (AED)
+            <input type="number" id="minAmount" min="0" step="0.01" />
+          </label>
+          <label>
+            Max Payable (AED)
+            <input type="number" id="maxAmount" min="0" step="0.01" />
+          </label>
+          <label>
+            Amount Segment
+            <select id="segmentFilter">
+              <option value="all">All</option>
+              <option value="small">Small (&lt; 1,000)</option>
+              <option value="medium">Medium (1,000 - 10,000)</option>
+              <option value="large">Large (&gt; 10,000)</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="table-panel">
+        <h3>Documents</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Invoice ID</th>
+                <th>Type</th>
+                <th>Issue Date</th>
+                <th>Buyer</th>
+                <th>Country</th>
+                <th>Tax</th>
+                <th>Payable (AED)</th>
+                <th>Status</th>
+                <th>Scenario</th>
+              </tr>
+            </thead>
+            <tbody id="invoiceTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="detail-panel">
+        <h3 id="detailTitle">Invoice Details</h3>
+        <div class="detail-columns">
+          <article>
+            <h4>Header</h4>
+            <pre id="headerDetail"></pre>
+          </article>
+          <article>
+            <h4>Lines</h4>
+            <pre id="linesDetail"></pre>
+          </article>
+          <article>
+            <h4>VAT Breakdown</h4>
+            <pre id="vatDetail"></pre>
+          </article>
+        </div>
+      </section>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+  </html>

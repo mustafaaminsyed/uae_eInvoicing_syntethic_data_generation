@@ -82,6 +82,39 @@ python generate_uae_einvoicing_dataset.py --n-documents 5000 --output-dir output
 python generate_mof_schema_dataset.py --n-documents 5000 --invalid-share 0.15 --output-dir output_mof
 ```
 
+## Data Viewer (Frontend)
+
+A lightweight frontend viewer is available under `ui/` to explore generated datasets with filtering by:
+
+- invoice type (`380` / `381`)
+- tax category (`S`, `Z`, `E`)
+- validation status (valid/invalid)
+- scenario code
+- buyer country
+- date range
+- payable amount range and segment
+
+To run locally:
+
+```powershell
+cd ui
+python -m http.server 8080
+```
+
+Then open:
+
+`http://localhost:8080`
+
+Default dataset path in the UI points to:
+
+`../output_pilot/run_20260305T222747Z_20260303`
+
+You can replace this path in the viewer to load any run folder containing:
+
+- `invoice_headers.csv`
+- `invoice_lines.csv`
+- `invoice_vat_breakdown.csv`
+
 ## Schema Alignment Status
 
 The BRD-baseline generator (`generate_uae_einvoicing_dataset.py`) supports structured positive and negative testing for the cleaned BRD model.
