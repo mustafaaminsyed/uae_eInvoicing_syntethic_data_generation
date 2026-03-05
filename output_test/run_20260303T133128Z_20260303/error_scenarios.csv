@@ -1,0 +1,11 @@
+ErrorScenarioCode,ErrorType,Category,Description,ExpectedValidationFailure
+ERR01_MISSING_BUYER_TRN,Missing Buyer TRN,Structural,Missing Buyer TRN,Mandatory field failure
+ERR02_BAD_TRN_LENGTH,Invalid TRN Format,Format,Invalid TRN Format,Format failure
+ERR03_TAX_MISMATCH,VAT Category/Rate Mismatch,Logical,VAT Category/Rate Mismatch,Tax logic failure
+ERR04_TOTALS_NOT_RECONCILE,Header/Line Total Mismatch,Arithmetic,Header/Line Total Mismatch,Arithmetic failure
+ERR05_BAD_CURRENCY,Invalid Currency Code,Structural,Invalid Currency Code,Currency validation failure
+ERR06_TOO_MANY_DECIMALS,Excess Decimal Precision,Format,Excess Decimal Precision,Precision validation failure
+ERR07_NEG_QTY_ON_380,Negative Quantity on Invoice,Logical,Negative Quantity on Invoice,Invalid quantity
+ERR08_DUPLICATE_INVOICE_ID,Duplicate Invoice Number,Referential,Duplicate Invoice Number,Uniqueness failure
+ERR09_CREDIT_NO_REFERENCE,Credit Note Missing Reference,Referential,Credit Note Missing Reference,Linkage failure
+ERR10_VAT_BREAKDOWN_INCONSISTENT,VAT Breakdown Aggregation Error,Aggregation,VAT Breakdown Aggregation Error,Aggregation mismatch

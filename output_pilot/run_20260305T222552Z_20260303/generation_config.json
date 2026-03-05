@@ -1,0 +1,20 @@
+{
+  "n_documents": 1000,
+  "start_date": "2025-01-01",
+  "end_date": "2025-12-31",
+  "seller_trn": "100987654321000",
+  "currency": "AED",
+  "credit_note_share": 0.06,
+  "invalid_share": 0.04,
+  "discount_share": 0.08,
+  "charge_share": 0.03,
+  "top_customer_share": 0.6,
+  "n_customers": 250,
+  "ae_buyer_share": 0.85,
+  "seed": 20260303,
+  "scenario_profile": "UAE B2B professional services",
+  "schema_version": "1.0",
+  "document_version": "1.0",
+  "run_id": "run_20260305T222552Z_20260303",
+  "generated_at_utc": "2026-03-05T22:25:52Z"
+}

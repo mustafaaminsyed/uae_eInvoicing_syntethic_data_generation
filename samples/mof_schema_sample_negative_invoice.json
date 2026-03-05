@@ -1,0 +1,89 @@
+{
+  "scenario_id": "UAE_LOCAL_B2B_STANDARD_NEG_01",
+  "scenario_type": "negative",
+  "intended_failures": [
+    "FIELD_11_TIN_FORMAT_INVALID",
+    "FIELD_12_SCHEME_NOT_0235",
+    "FIELD_15_TRN_FORMAT_INVALID",
+    "FIELD_29_MISSING_BUYER_COUNTRY_CODE",
+    "LINE_TAX_MISMATCH",
+    "HEADER_LINE_RECONCILIATION_MISMATCH"
+  ],
+  "header": {
+    "invoice_number": "INV-2026-NEG-0001",
+    "invoice_date": "2026-03-02",
+    "invoice_type_code": "380",
+    "invoice_currency_code": "AED",
+    "invoice_transaction_type_code": "388",
+    "payment_due_date": "2026-04-01",
+    "business_process_type": "urn:fdc:peppol.eu:2017:poacc:billing:01:1.0",
+    "specification_identifier": "urn:cen.eu:en16931:2017",
+    "payment_means_type_code": "30",
+    "seller_name": "Synthetic Gulf Tech LLC",
+    "seller_electronic_address": "100987654",
+    "seller_electronic_identifier": "9999",
+    "seller_legal_registration_identifier": "LIC-7894561",
+    "seller_legal_registration_identifier_type": "TRADE_LICENSE",
+    "seller_tax_registration_identifier": "10098765432100",
+    "seller_tax_scheme_code": "VAT",
+    "seller_address_line_1": "Office 1203, Sheikh Zayed Road",
+    "seller_city": "Dubai",
+    "seller_country_subdivision": "DU",
+    "seller_country_code": "AE",
+    "buyer_name": "Synthetic Al Noor Trading LLC",
+    "buyer_electronic_address": "1001122334",
+    "buyer_electronic_identifier": "0235",
+    "buyer_legal_registration_identifier": "LIC-4455667",
+    "buyer_legal_registration_identifier_type": "TRADE_LICENSE",
+    "buyer_address_line_1": "Musaffah Industrial Area",
+    "buyer_city": "Abu Dhabi",
+    "buyer_country_subdivision": "AZ",
+    "buyer_country_code": "",
+    "sum_of_invoice_line_net_amount": 3600.0,
+    "invoice_total_amount_without_tax": 3500.0,
+    "invoice_total_tax_amount": 175.0,
+    "invoice_total_amount_with_tax": 3675.0,
+    "amount_due_for_payment": 3675.0
+  },
+  "tax_breakdown": [
+    {
+      "tax_category_taxable_amount": 3500.0,
+      "tax_category_tax_amount": 175.0,
+      "tax_category_code": "S",
+      "tax_category_rate": 5.0
+    }
+  ],
+  "lines": [
+    {
+      "invoice_line_identifier": "1",
+      "invoiced_quantity": -2,
+      "unit_of_measure_code": "HUR",
+      "invoice_line_net_amount": 2100.0,
+      "item_net_price": 200.0,
+      "item_gross_price": 210.0,
+      "item_price_base_quantity": 1,
+      "invoiced_item_tax_category_code": "S",
+      "invoiced_item_tax_rate": 0.0,
+      "vat_line_amount_in_aed": 0.0,
+      "invoice_line_amount_in_aed": 2100.0,
+      "item_name": "Consulting Hours",
+      "item_description": "ERP tax configuration support"
+    },
+    {
+      "invoice_line_identifier": "2",
+      "invoiced_quantity": 3,
+      "unit_of_measure_code": "EA",
+      "invoice_line_net_amount": 1500.0,
+      "item_net_price": 500.0,
+      "item_gross_price": 525.0,
+      "item_price_base_quantity": 1,
+      "invoiced_item_tax_category_code": "S",
+      "invoiced_item_tax_rate": 5.0,
+      "vat_line_amount_in_aed": 75.0,
+      "invoice_line_amount_in_aed": 1575.0,
+      "item_name": "Hardware Accessory Kit",
+      "item_description": "Network accessories bundle"
+    }
+  ],
+  "quality_expectation": "fail_selected_schema_and_reconciliation_rules"
+}
