@@ -1005,6 +1005,16 @@ function wireEvents() {
       }
     }
   });
+  document.querySelectorAll(".panel-toggle").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const targetId = btn.getAttribute("data-target");
+      const panelBody = document.getElementById(targetId);
+      if (!panelBody) return;
+      const isCollapsed = panelBody.classList.toggle("collapsed");
+      btn.textContent = isCollapsed ? "▸" : "▾";
+      btn.setAttribute("aria-expanded", String(!isCollapsed));
+    });
+  });
 }
 
 wireEvents();

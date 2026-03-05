@@ -21,77 +21,97 @@
         </aside>
       </section>
 
-      <section class="loader-panel">
-        <h3>1. Dataset Loading</h3>
-        <p class="section-desc">
-          Load data either from a local run folder path or by dragging CSV files. The checklist shows what is required
-          and schema detection confirms what format the app recognized.
-        </p>
-        <label for="datasetPath">Dataset Folder (relative to repo root)</label>
-        <div class="loader-row">
-          <input id="datasetPath" value="../output_pilot/run_20260305T222747Z_20260303" />
-          <button id="loadBtn" class="run-btn" title="Run / Apply dataset">
-            <span class="btn-icon">▶</span>
-            <span>Run Dataset</span>
-          </button>
-        </div>
-        <div class="upload-checklist">
-          <p class="check-title">Upload Checklist</p>
-          <div class="check-grid">
-            <div id="chkHeaders" class="check-item">invoice_headers.csv</div>
-            <div id="chkLines" class="check-item">invoice_lines.csv</div>
-            <div id="chkVat" class="check-item">invoice_vat_breakdown.csv</div>
-            <div id="chkMof" class="check-item">mof_schema_dataset.csv</div>
+      <section class="loader-panel panel-shell">
+        <div class="panel-head">
+          <div>
+            <h3>1. Dataset Loading</h3>
+            <p class="section-desc">
+              Load data either from a local run folder path or by dragging CSV files. The checklist shows what is required
+              and schema detection confirms what format the app recognized.
+            </p>
           </div>
-          <p id="schemaDetected" class="schema-detected">Schema: not detected</p>
+          <button class="panel-toggle" type="button" data-target="loaderBody" aria-expanded="true" title="Collapse section">▾</button>
         </div>
-        <div class="or-divider">or</div>
-        <div id="dropZone" class="drop-zone">
-          <p>Drag and drop CSV files here</p>
-          <p class="drop-sub">
-            Required for BRD view: `invoice_headers.csv`, `invoice_lines.csv`, `invoice_vat_breakdown.csv`
-          </p>
-          <p class="drop-sub">Or MoF view: `mof_schema_dataset.csv`</p>
-          <input id="fileInput" type="file" multiple accept=".csv" />
+        <div id="loaderBody" class="panel-body">
+          <label for="datasetPath">Dataset Folder (relative to repo root)</label>
+          <div class="loader-row">
+            <input id="datasetPath" value="../output_pilot/run_20260305T222747Z_20260303" />
+            <button id="loadBtn" class="run-btn" title="Run / Apply dataset">
+              <span class="btn-icon">▶</span>
+              <span>Run Dataset</span>
+            </button>
+          </div>
+          <div class="upload-checklist">
+            <p class="check-title">Upload Checklist</p>
+            <div class="check-grid">
+              <div id="chkHeaders" class="check-item">invoice_headers.csv</div>
+              <div id="chkLines" class="check-item">invoice_lines.csv</div>
+              <div id="chkVat" class="check-item">invoice_vat_breakdown.csv</div>
+              <div id="chkMof" class="check-item">mof_schema_dataset.csv</div>
+            </div>
+            <p id="schemaDetected" class="schema-detected">Schema: not detected</p>
+          </div>
+          <div class="or-divider">or</div>
+          <div id="dropZone" class="drop-zone">
+            <p>Drag and drop CSV files here</p>
+            <p class="drop-sub">
+              Required for BRD view: `invoice_headers.csv`, `invoice_lines.csv`, `invoice_vat_breakdown.csv`
+            </p>
+            <p class="drop-sub">Or MoF view: `mof_schema_dataset.csv`</p>
+            <input id="fileInput" type="file" multiple accept=".csv" />
+          </div>
+          <div id="preloadSummary" class="preload-summary"></div>
+          <div id="uploadState" class="upload-state idle">No files staged</div>
+          <p id="statusText" class="status">Ready</p>
         </div>
-        <div id="preloadSummary" class="preload-summary"></div>
-        <div id="uploadState" class="upload-state idle">No files staged</div>
-        <p id="statusText" class="status">Ready</p>
       </section>
 
-      <section class="summary-grid">
-        <div class="section-block-head">
-          <h3>2. Summary Metrics</h3>
-          <p class="section-desc">
-            These cards show the currently filtered result, not the full dataset. Change filters to see metrics update
-            in real time.
-          </p>
+      <section class="panel-shell">
+        <div class="panel-head">
+          <div>
+            <h3>2. Summary Metrics</h3>
+            <p class="section-desc">
+              These cards show the currently filtered result, not the full dataset. Change filters to see metrics update
+              in real time.
+            </p>
+          </div>
+          <button class="panel-toggle" type="button" data-target="summaryBody" aria-expanded="true" title="Collapse section">▾</button>
         </div>
-        <article class="summary-card">
-          <p>Total Documents</p>
-          <h2 id="totalDocs">-</h2>
-        </article>
-        <article class="summary-card">
-          <p>Invoices (380)</p>
-          <h2 id="invoice380">-</h2>
-        </article>
-        <article class="summary-card">
-          <p>Credit Notes (381)</p>
-          <h2 id="invoice381">-</h2>
-        </article>
-        <article class="summary-card">
-          <p>Invalid Documents</p>
-          <h2 id="invalidDocs">-</h2>
-        </article>
+        <div id="summaryBody" class="panel-body">
+          <section class="summary-grid">
+            <article class="summary-card">
+              <p>Total Documents</p>
+              <h2 id="totalDocs">-</h2>
+            </article>
+            <article class="summary-card">
+              <p>Invoices (380)</p>
+              <h2 id="invoice380">-</h2>
+            </article>
+            <article class="summary-card">
+              <p>Credit Notes (381)</p>
+              <h2 id="invoice381">-</h2>
+            </article>
+            <article class="summary-card">
+              <p>Invalid Documents</p>
+              <h2 id="invalidDocs">-</h2>
+            </article>
+          </section>
+        </div>
       </section>
 
-      <section class="filters">
-        <h3>3. Filters</h3>
-        <p class="section-desc">
-          Use filters to narrow invoices before review, preview, and PDF export. Start broad, then refine by status,
-          type, tax profile, date range, and value band.
-        </p>
-        <div class="filter-grid">
+      <section class="filters panel-shell">
+        <div class="panel-head">
+          <div>
+            <h3>3. Filters</h3>
+            <p class="section-desc">
+              Use filters to narrow invoices before review, preview, and PDF export. Start broad, then refine by status,
+              type, tax profile, date range, and value band.
+            </p>
+          </div>
+          <button class="panel-toggle" type="button" data-target="filtersBody" aria-expanded="true" title="Collapse section">▾</button>
+        </div>
+        <div id="filtersBody" class="panel-body">
+          <div class="filter-grid">
           <label>
             Search Invoice ID
             <input id="searchInvoice" placeholder="INV-2025-000123" />
@@ -170,84 +190,99 @@
             <span class="hint">Quick value-banding for invoice size.</span>
           </label>
         </div>
-      </section>
-
-      <section class="table-panel">
-        <h3>4. Document Results</h3>
-        <p class="section-desc">
-          Click any row to inspect invoice details. The table reflects your current filter selection and drives the
-          preview and PDF tools below.
-        </p>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Invoice ID</th>
-                <th>Type</th>
-                <th>Issue Date</th>
-                <th>Buyer</th>
-                <th>Country</th>
-                <th>Tax</th>
-                <th>Payable (AED)</th>
-                <th>Status</th>
-                <th>Scenario</th>
-              </tr>
-            </thead>
-            <tbody id="invoiceTableBody"></tbody>
-          </table>
         </div>
       </section>
 
-      <section class="detail-panel">
-        <h3 id="detailTitle">5. Invoice Details</h3>
-        <p class="section-desc">
-          Review raw header/line/VAT JSON, then use Invoice Mode for mandatory-field checks and PDF output. Use section
-          expand/collapse controls to focus on what matters.
-        </p>
-        <div class="detail-columns">
-          <article>
-            <h4>Header</h4>
-            <pre id="headerDetail"></pre>
-          </article>
-          <article>
-            <h4>Lines</h4>
-            <pre id="linesDetail"></pre>
-          </article>
-          <article>
-            <h4>VAT Breakdown</h4>
-            <pre id="vatDetail"></pre>
-          </article>
-        </div>
-        <div class="invoice-preview-wrap">
-          <div class="preview-head">
-            <h4>Invoice Preview</h4>
-            <div class="pdf-actions">
-              <label>
-                Invoice Mode
-                <select id="invoiceMode">
-                  <option value="taxable">Taxable E-Invoice (Mandatory 4.1)</option>
-                  <option value="commercial">Commercial XML (Mandatory 1-51)</option>
-                </select>
-              </label>
-              <label>
-                PDF Scope
-                <select id="pdfScope">
-                  <option value="selected">Selected Invoice</option>
-                  <option value="filtered">Filtered Invoices</option>
-                </select>
-              </label>
-              <label>
-                Max Docs
-                <input id="pdfMaxDocs" type="number" min="1" max="50" value="10" />
-              </label>
-              <button id="previewPdfBtn" type="button">Preview PDF</button>
-              <button id="downloadPdfBtn" type="button">Download PDF</button>
-            </div>
+      <section class="table-panel panel-shell">
+        <div class="panel-head">
+          <div>
+            <h3>4. Document Results</h3>
+            <p class="section-desc">
+              Click any row to inspect invoice details. The table reflects your current filter selection and drives the
+              preview and PDF tools below.
+            </p>
           </div>
-          <p id="pdfHint" class="hint">PDF operations default to selected invoice only.</p>
-          <iframe id="pdfPreviewFrame" class="pdf-frame" title="PDF Preview"></iframe>
-          <div id="invoicePreview" class="invoice-preview"></div>
-          <div id="mandatoryMatrix" class="mandatory-matrix"></div>
+          <button class="panel-toggle" type="button" data-target="tableBody" aria-expanded="true" title="Collapse section">▾</button>
+        </div>
+        <div id="tableBody" class="panel-body">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Invoice ID</th>
+                  <th>Type</th>
+                  <th>Issue Date</th>
+                  <th>Buyer</th>
+                  <th>Country</th>
+                  <th>Tax</th>
+                  <th>Payable (AED)</th>
+                  <th>Status</th>
+                  <th>Scenario</th>
+                </tr>
+              </thead>
+              <tbody id="invoiceTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="detail-panel panel-shell">
+        <div class="panel-head">
+          <div>
+            <h3 id="detailTitle">5. Invoice Details</h3>
+            <p class="section-desc">
+              Review raw header/line/VAT JSON, then use Invoice Mode for mandatory-field checks and PDF output. Use section
+              expand/collapse controls to focus on what matters.
+            </p>
+          </div>
+          <button class="panel-toggle" type="button" data-target="detailBody" aria-expanded="true" title="Collapse section">▾</button>
+        </div>
+        <div id="detailBody" class="panel-body">
+          <div class="detail-columns">
+            <article>
+              <h4>Header</h4>
+              <pre id="headerDetail"></pre>
+            </article>
+            <article>
+              <h4>Lines</h4>
+              <pre id="linesDetail"></pre>
+            </article>
+            <article>
+              <h4>VAT Breakdown</h4>
+              <pre id="vatDetail"></pre>
+            </article>
+          </div>
+          <div class="invoice-preview-wrap">
+            <div class="preview-head">
+              <h4>Invoice Preview</h4>
+              <div class="pdf-actions">
+                <label>
+                  Invoice Mode
+                  <select id="invoiceMode">
+                    <option value="taxable">Taxable E-Invoice (Mandatory 4.1)</option>
+                    <option value="commercial">Commercial XML (Mandatory 1-51)</option>
+                  </select>
+                </label>
+                <label>
+                  PDF Scope
+                  <select id="pdfScope">
+                    <option value="selected">Selected Invoice</option>
+                    <option value="filtered">Filtered Invoices</option>
+                  </select>
+                </label>
+                <label>
+                  Max Docs
+                  <input id="pdfMaxDocs" type="number" min="1" max="50" value="10" />
+                </label>
+                <button id="previewPdfBtn" type="button">Preview PDF</button>
+                <button id="downloadPdfBtn" type="button">Download PDF</button>
+              </div>
+            </div>
+            <p id="pdfHint" class="hint">PDF operations default to selected invoice only.</p>
+            <iframe id="pdfPreviewFrame" class="pdf-frame" title="PDF Preview"></iframe>
+            <div id="invoicePreview" class="invoice-preview"></div>
+            <div id="mandatoryMatrix" class="mandatory-matrix"></div>
+          </div>
         </div>
       </section>
     </main>

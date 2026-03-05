@@ -109,6 +109,48 @@ body {
   padding: 1rem 1.1rem;
 }
 
+.panel-shell {
+  padding: 0.9rem 1rem;
+}
+
+.panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.panel-head h3 {
+  margin: 0;
+}
+
+.panel-toggle {
+  min-width: 36px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #e0f1e4;
+  color: #246837;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 800;
+  padding: 0;
+}
+
+.panel-toggle:hover {
+  background: #cce6d3;
+}
+
+.panel-body {
+  margin-top: 0.55rem;
+}
+
+.panel-body.collapsed {
+  display: none;
+}
+
 .or-divider {
   margin: 0.65rem 0 0.45rem;
   font-size: 0.86rem;
