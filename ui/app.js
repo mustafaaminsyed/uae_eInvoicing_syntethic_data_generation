@@ -18,6 +18,7 @@ const nodes = {
   dropZone: $("dropZone"),
   fileInput: $("fileInput"),
   preloadSummary: $("preloadSummary"),
+  uploadState: $("uploadState"),
   statusText: $("statusText"),
   totalDocs: $("totalDocs"),
   invoice380: $("invoice380"),
@@ -137,6 +138,19 @@ function buildIndexes() {
 function setStatus(text, isError = false) {
   nodes.statusText.textContent = text;
   nodes.statusText.style.color = isError ? "#b91c1c" : "";
+}
+
+function setUploadState(kind, text) {
+  nodes.uploadState.className = `upload-state ${kind}`;
+  nodes.uploadState.textContent = text;
+}
+
+function missingColumns(rows, requiredCols) {
+  if (!rows || rows.length === 0) {
+    return requiredCols.slice();
+  }
+  const present = new Set(Object.keys(rows[0]));
+  return requiredCols.filter((col) => !present.has(col));
 }
 
 function populateSelectOptions() {
@@ -412,8 +426,10 @@ async function loadDataset() {
       nodes.vatDetail.textContent = "";
       nodes.detailTitle.textContent = "Invoice Details";
     }
+    setUploadState("loaded", "Loaded from folder path");
     setStatus(`Loaded ${state.headers.length} headers, ${state.lines.length} lines.`);
   } catch (err) {
+    setUploadState("error", "Load failed");
     setStatus(`Load failed: ${err.message}. Run via local server (not file://).`, true);
   }
 }
@@ -425,6 +441,7 @@ async function stageFromFiles(fileList) {
   const missing = needed.filter((n) => !byName.has(n));
   if (missing.length > 0) {
     nodes.preloadSummary.textContent = `Missing required file(s): ${missing.join(", ")}`;
+    setUploadState("error", "Missing required files");
     return;
   }
   try {
@@ -436,12 +453,29 @@ async function stageFromFiles(fileList) {
     const headers = parseCSV(hText);
     const lines = parseCSV(lText);
     const vats = parseCSV(vText);
+    const reqHeaders = ["InvoiceID", "InvoiceTypeCode", "IssueDate", "BuyerCountry", "PayableAmount"];
+    const reqLines = ["InvoiceID", "LineNumber", "ItemDescription", "Quantity", "TaxCategory", "LineExtensionAmount"];
+    const reqVat = ["InvoiceID", "TaxCategory", "TaxRate", "TaxableAmount", "TaxAmount"];
+    const missingHeaderCols = missingColumns(headers, reqHeaders);
+    const missingLineCols = missingColumns(lines, reqLines);
+    const missingVatCols = missingColumns(vats, reqVat);
+    if (missingHeaderCols.length || missingLineCols.length || missingVatCols.length) {
+      const parts = [];
+      if (missingHeaderCols.length) parts.push(`headers missing: ${missingHeaderCols.join(", ")}`);
+      if (missingLineCols.length) parts.push(`lines missing: ${missingLineCols.join(", ")}`);
+      if (missingVatCols.length) parts.push(`vat missing: ${missingVatCols.join(", ")}`);
+      nodes.preloadSummary.textContent = `Schema check failed: ${parts.join(" | ")}`;
+      setUploadState("error", "Staged files failed validation");
+      return;
+    }
     const invoiceCount = new Set(headers.map((h) => h.InvoiceID)).size;
     state.stagedFiles = { headers, lines, vats };
     nodes.preloadSummary.textContent =
-      `Staged files: headers=${headers.length} rows, lines=${lines.length} rows, vat=${vats.length} rows, distinct invoices=${invoiceCount}. Click "Load Dataset" to apply.`;
-    setStatus("Files staged from drag/drop.");
+      `Verified files: headers=${headers.length} rows, lines=${lines.length} rows, vat=${vats.length} rows, distinct invoices=${invoiceCount}. Click "Run Dataset" to apply.`;
+    setUploadState("staged", "Uploaded and verified");
+    setStatus("Files uploaded and verified. Ready to run.");
   } catch (err) {
+    setUploadState("error", "File parsing failed");
     setStatus(`File parsing failed: ${err.message}`, true);
   }
 }
@@ -456,6 +490,7 @@ function loadStagedDataset() {
   state.selectedInvoice = null;
   applyFilters();
   if (state.filtered.length > 0) selectInvoice(state.filtered[0].InvoiceID);
+  setUploadState("loaded", "Staged files loaded");
   setStatus(`Loaded staged dataset: ${state.headers.length} headers, ${state.lines.length} lines.`);
   return true;
 }
@@ -496,3 +531,4 @@ function wireEvents() {
 }
 
 wireEvents();
+setUploadState("idle", "No files staged");

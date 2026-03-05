@@ -150,6 +150,37 @@ body {
   color: var(--ink-soft);
 }
 
+.upload-state {
+  margin-top: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.upload-state.idle {
+  background: #edf2ee;
+  color: #567062;
+}
+
+.upload-state.staged {
+  background: #d9f2df;
+  color: #1f6f34;
+}
+
+.upload-state.loaded {
+  background: #d7efe7;
+  color: #0f5f53;
+}
+
+.upload-state.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .loader-row {
   display: flex;
   gap: 0.6rem;
@@ -181,6 +212,19 @@ button {
 
 button:hover {
   filter: brightness(0.94);
+}
+
+.run-btn {
+  min-width: 150px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font-weight: 700;
+}
+
+.btn-icon {
+  font-size: 0.9rem;
 }
 
 .status {

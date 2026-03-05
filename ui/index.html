@@ -25,7 +25,10 @@
         <label for="datasetPath">Dataset Folder (relative to repo root)</label>
         <div class="loader-row">
           <input id="datasetPath" value="../output_pilot/run_20260305T222747Z_20260303" />
-          <button id="loadBtn">Load Dataset</button>
+          <button id="loadBtn" class="run-btn" title="Run / Apply dataset">
+            <span class="btn-icon">▶</span>
+            <span>Run Dataset</span>
+          </button>
         </div>
         <div class="or-divider">or</div>
         <div id="dropZone" class="drop-zone">
@@ -34,6 +37,7 @@
           <input id="fileInput" type="file" multiple accept=".csv" />
         </div>
         <div id="preloadSummary" class="preload-summary"></div>
+        <div id="uploadState" class="upload-state idle">No files staged</div>
         <p id="statusText" class="status">Ready</p>
       </section>
 
