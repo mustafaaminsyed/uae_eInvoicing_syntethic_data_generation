@@ -476,10 +476,25 @@ pre {
   font-weight: 700;
   color: #2b4e3a;
   border-bottom: 1px solid #e7f0e9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .preview-section > summary::-webkit-details-marker {
   display: none;
+}
+
+.preview-section > summary::after {
+  content: "▾";
+  font-size: 0.95rem;
+  color: #2f8a42;
+  transform: rotate(0deg);
+  transition: transform 120ms ease;
+}
+
+.preview-section:not([open]) > summary::after {
+  content: "▸";
 }
 
 .preview-section > div {
