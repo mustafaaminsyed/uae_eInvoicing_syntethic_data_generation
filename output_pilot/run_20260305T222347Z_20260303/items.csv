@@ -1,0 +1,41 @@
+ItemCode,ItemName,ItemCategory,ItemVATClass,DefaultPriceBand
+ITM001,Professional Services,Services,STANDARD,P3
+ITM002,Consulting Hours,Services,STANDARD,P3
+ITM003,IT Support,Services,STANDARD,P2
+ITM004,Software Subscription,Services,STANDARD,P2
+ITM005,Cloud Services,Services,STANDARD,P3
+ITM006,Training Session,Services,STANDARD,P2
+ITM007,Maintenance Fee,Services,STANDARD,P2
+ITM008,Hardware Accessories,Goods,STANDARD,P2
+ITM009,Hardware Equipment,Goods,STANDARD,P4
+ITM010,Shipping and Handling,Service,STANDARD,P1
+ITM011,Export Documentation,Service,INTL_SERVICE,P2
+ITM012,International Freight,Service,INTL_SERVICE,P4
+ITM013,Export Goods,Goods,EXPORT_GOODS,P4
+ITM014,Warranty Extension,Service,STANDARD,P2
+ITM015,Installation Service,Service,STANDARD,P3
+ITM016,Spare Parts,Goods,STANDARD,P2
+ITM017,Licensing Fee,Service,STANDARD,P3
+ITM018,Data Processing,Service,STANDARD,P2
+ITM019,API Integration,Service,STANDARD,P3
+ITM020,Hosting Fee,Service,STANDARD,P2
+ITM021,Insurance Fee,Service,EXEMPT,P2
+ITM022,Finance Charge,Service,EXEMPT,P2
+ITM023,Medical Service,Service,EXEMPT,P3
+ITM024,Education Service,Service,EXEMPT,P2
+ITM025,Promotional Discount,N/A,STANDARD,P1
+ITM026,Delivery Charge,N/A,STANDARD,P1
+ITM027,Packaging Fee,N/A,STANDARD,P1
+ITM028,Customs Handling,Service,INTL_SERVICE,P3
+ITM029,Overseas Support,Service,INTL_SERVICE,P3
+ITM030,Digital Service Export,Service,INTL_SERVICE,P3
+ITM031,Synthetic Item 31,Services,STANDARD,P3
+ITM032,Synthetic Item 32,Goods,STANDARD,P4
+ITM033,Synthetic Item 33,Services,STANDARD,P1
+ITM034,Synthetic Item 34,Goods,STANDARD,P2
+ITM035,Synthetic Item 35,Services,EXEMPT,P3
+ITM036,Synthetic Item 36,Goods,STANDARD,P4
+ITM037,Synthetic Item 37,Services,STANDARD,P1
+ITM038,Synthetic Item 38,Goods,STANDARD,P2
+ITM039,Synthetic Item 39,Services,STANDARD,P3
+ITM040,Synthetic Item 40,Goods,STANDARD,P4
