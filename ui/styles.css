@@ -95,6 +95,7 @@ body {
 .filters,
 .table-panel,
 .detail-panel,
+.summary-panel,
 .summary-card {
   background: var(--card);
   border: 1px solid var(--line);
