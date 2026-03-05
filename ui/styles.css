@@ -1,14 +1,14 @@
 :root {
-  --bg: #f4efe7;
-  --bg-soft: #fffaf2;
-  --ink: #1f2a37;
-  --ink-soft: #5b6675;
-  --accent: #0f766e;
-  --accent-soft: #d7f3ef;
-  --warn: #b45309;
+  --bg: #eff7ef;
+  --bg-soft: #f8fff8;
+  --ink: #123124;
+  --ink-soft: #4a6458;
+  --accent: #2f8a42;
+  --accent-soft: #dff4e4;
+  --warn: #8b5e13;
   --danger: #b91c1c;
   --card: #ffffff;
-  --line: #dfd8cd;
+  --line: #cde0d1;
   --shadow: 0 8px 24px rgba(22, 28, 45, 0.08);
 }
 
@@ -21,8 +21,8 @@ body {
   font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
   color: var(--ink);
   background:
-    radial-gradient(circle at 0% 0%, #fae8d2 0%, transparent 38%),
-    radial-gradient(circle at 100% 0%, #d6f2ec 0%, transparent 30%),
+    radial-gradient(circle at 0% 0%, #d9f0db 0%, transparent 36%),
+    radial-gradient(circle at 100% 0%, #e8f8ea 0%, transparent 30%),
     var(--bg);
 }
 
@@ -39,7 +39,7 @@ body {
   align-items: center;
   gap: 1rem;
   padding: 1.25rem 1.4rem;
-  background: linear-gradient(125deg, #fff6e8, #f4fffd);
+  background: linear-gradient(125deg, #f7fff7, #f1fbf1);
   border: 1px solid var(--line);
   border-radius: 16px;
   box-shadow: var(--shadow);
@@ -52,7 +52,8 @@ body {
 
 .hero h1 {
   margin: 0.2rem 0;
-  font-size: clamp(1.5rem, 2vw, 2rem);
+  font-size: clamp(1.9rem, 2.6vw, 2.45rem);
+  line-height: 1.15;
 }
 
 .eyebrow {
@@ -61,21 +62,23 @@ body {
   text-transform: uppercase;
   color: var(--accent);
   font-weight: 700;
-  font-size: 0.78rem;
+  font-size: 1rem;
 }
 
 .subtitle {
   margin: 0.2rem 0 0;
   color: var(--ink-soft);
+  font-size: 1.03rem;
+  line-height: 1.45;
 }
 
 .brand-box {
   justify-self: end;
   width: 100%;
   max-width: 260px;
-  border: 1px solid #d8e6df;
+  border: 1px solid #c9e5cf;
   border-radius: 14px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.6));
+  background: linear-gradient(180deg, rgba(245, 255, 246, 0.92), rgba(245, 255, 246, 0.7));
   padding: 0.55rem 0.7rem;
   display: grid;
   place-items: center;
@@ -106,6 +109,47 @@ body {
   padding: 1rem 1.1rem;
 }
 
+.or-divider {
+  margin: 0.65rem 0 0.45rem;
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.drop-zone {
+  border: 1.5px dashed #9ecaa8;
+  border-radius: 10px;
+  background: #f8fff9;
+  padding: 0.8rem;
+  text-align: center;
+}
+
+.drop-zone.dragover {
+  border-color: var(--accent);
+  background: #eaf8ee;
+}
+
+.drop-zone p {
+  margin: 0.15rem 0;
+}
+
+.drop-sub {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.drop-zone input[type="file"] {
+  margin-top: 0.5rem;
+}
+
+.preload-summary {
+  margin-top: 0.55rem;
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+}
+
 .loader-row {
   display: flex;
   gap: 0.6rem;
@@ -120,10 +164,10 @@ button {
 input,
 select {
   width: 100%;
-  border: 1px solid #cfc6b9;
+  border: 1px solid #b9d2be;
   border-radius: 8px;
   padding: 0.45rem 0.55rem;
-  background: #fffdf9;
+  background: #fbfffb;
 }
 
 button {
@@ -196,14 +240,14 @@ thead th {
   position: sticky;
   top: 0;
   z-index: 1;
-  background: #f8f4ee;
+  background: #eef9ef;
   text-align: left;
 }
 
 th,
 td {
   padding: 0.55rem 0.5rem;
-  border-bottom: 1px solid #ece5d9;
+  border-bottom: 1px solid #deecdf;
 }
 
 tr:hover td {
@@ -243,12 +287,78 @@ pre {
   padding: 0.7rem;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #fdfbf6;
+  background: #f7fcf8;
   max-height: 320px;
   overflow: auto;
   white-space: pre-wrap;
   word-break: break-word;
   font-size: 0.82rem;
+}
+
+.hint {
+  display: block;
+  font-size: 0.74rem;
+  color: #5f7d6f;
+  font-weight: 500;
+}
+
+.invoice-preview-wrap {
+  margin-top: 1rem;
+  border-top: 1px solid var(--line);
+  padding-top: 0.85rem;
+}
+
+.preview-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.6rem;
+}
+
+.preview-head h4 {
+  margin: 0;
+}
+
+.invoice-preview {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: white;
+  padding: 0.9rem;
+  box-shadow: inset 0 0 0 1px #f2f8f3;
+}
+
+.preview-logo {
+  width: 130px;
+  display: block;
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.7rem;
+}
+
+.preview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 0.8rem;
+  font-size: 0.84rem;
+  margin-bottom: 0.8rem;
+}
+
+.preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.preview-table th,
+.preview-table td {
+  border: 1px solid #dfe9e1;
+  padding: 0.35rem;
 }
 
 @keyframes reveal {

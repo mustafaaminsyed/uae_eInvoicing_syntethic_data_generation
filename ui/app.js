@@ -7,6 +7,7 @@ const state = {
   taxByInvoice: new Map(),
   filtered: [],
   selectedInvoice: null,
+  stagedFiles: null,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -14,6 +15,9 @@ const $ = (id) => document.getElementById(id);
 const nodes = {
   datasetPath: $("datasetPath"),
   loadBtn: $("loadBtn"),
+  dropZone: $("dropZone"),
+  fileInput: $("fileInput"),
+  preloadSummary: $("preloadSummary"),
   statusText: $("statusText"),
   totalDocs: $("totalDocs"),
   invoice380: $("invoice380"),
@@ -35,6 +39,8 @@ const nodes = {
   headerDetail: $("headerDetail"),
   linesDetail: $("linesDetail"),
   vatDetail: $("vatDetail"),
+  invoicePreview: $("invoicePreview"),
+  downloadPdfBtn: $("downloadPdfBtn"),
 };
 
 function parseCSV(content) {
@@ -88,6 +94,15 @@ async function loadCSV(path) {
     throw new Error(`Failed to load ${path}`);
   }
   return parseCSV(await res.text());
+}
+
+function readFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error(`Failed to read file: ${file.name}`));
+    reader.readAsText(file);
+  });
 }
 
 function numberValue(v) {
@@ -234,7 +249,138 @@ function selectInvoice(invoiceId) {
   nodes.headerDetail.textContent = JSON.stringify(header, null, 2);
   nodes.linesDetail.textContent = JSON.stringify(lines, null, 2);
   nodes.vatDetail.textContent = JSON.stringify(vat, null, 2);
+  renderInvoicePreview(header, lines, vat);
   renderTable();
+}
+
+function renderInvoicePreview(header, lines, vatRows) {
+  if (!header) {
+    nodes.invoicePreview.innerHTML = "";
+    return;
+  }
+  const lineRows = lines
+    .map(
+      (ln) => `<tr>
+        <td>${ln.LineNumber}</td>
+        <td>${ln.ItemDescription}</td>
+        <td>${ln.Quantity}</td>
+        <td>${ln.UnitPrice}</td>
+        <td>${ln.TaxCategory}</td>
+        <td>${ln.LineExtensionAmount}</td>
+      </tr>`,
+    )
+    .join("");
+  const vatRowsHtml = vatRows
+    .map(
+      (v) => `<tr>
+        <td>${v.TaxCategory}</td>
+        <td>${v.TaxRate}</td>
+        <td>${v.TaxableAmount}</td>
+        <td>${v.TaxAmount}</td>
+      </tr>`,
+    )
+    .join("");
+
+  nodes.invoicePreview.innerHTML = `
+    <div class="preview-header">
+      <div>
+        <h4 style="margin:0;">Tax Invoice</h4>
+        <div style="font-size:0.83rem;color:#456356;">${header.InvoiceID}</div>
+      </div>
+      <img class="preview-logo" src="./assets/dariba-tech-logo.png" alt="Dariba Tech" />
+    </div>
+    <div class="preview-grid">
+      <div><strong>Issue Date:</strong> ${header.IssueDate}</div>
+      <div><strong>Due Date:</strong> ${header.DueDate}</div>
+      <div><strong>Buyer ID:</strong> ${header.BuyerID}</div>
+      <div><strong>Country:</strong> ${header.BuyerCountry}</div>
+      <div><strong>Type:</strong> ${header.InvoiceTypeCode}</div>
+      <div><strong>Status:</strong> ${header.InvoiceStatus}</div>
+    </div>
+    <table class="preview-table">
+      <thead>
+        <tr><th>#</th><th>Description</th><th>Qty</th><th>Unit Price</th><th>Tax</th><th>Line Amount</th></tr>
+      </thead>
+      <tbody>${lineRows}</tbody>
+    </table>
+    <div style="height:0.65rem;"></div>
+    <table class="preview-table">
+      <thead>
+        <tr><th>Tax Cat</th><th>Rate</th><th>Taxable</th><th>Tax</th></tr>
+      </thead>
+      <tbody>${vatRowsHtml}</tbody>
+    </table>
+    <div style="height:0.65rem;"></div>
+    <div class="preview-grid">
+      <div><strong>Tax Exclusive:</strong> ${header.TaxExclusiveAmount}</div>
+      <div><strong>Tax Amount:</strong> ${header.TaxAmount}</div>
+      <div><strong>Tax Inclusive:</strong> ${header.TaxInclusiveAmount}</div>
+      <div><strong>Payable:</strong> ${header.PayableAmount}</div>
+    </div>
+  `;
+}
+
+function downloadSelectedInvoicePdf() {
+  const header = state.headers.find((h) => h.InvoiceID === state.selectedInvoice);
+  if (!header) {
+    setStatus("Select an invoice first to download PDF.", true);
+    return;
+  }
+  const lines = state.linesByInvoice.get(header.InvoiceID) || [];
+  const vats = state.vatByInvoice.get(header.InvoiceID) || [];
+  const jsPDF = window.jspdf?.jsPDF;
+  if (!jsPDF) {
+    setStatus("PDF library not loaded.", true);
+    return;
+  }
+  const doc = new jsPDF();
+  let y = 14;
+  doc.setFontSize(16);
+  doc.text("Dariba Tech - Synthetic Tax Invoice", 14, y);
+  y += 8;
+  doc.setFontSize(10);
+  doc.text(`Invoice ID: ${header.InvoiceID}`, 14, y);
+  doc.text(`Type: ${header.InvoiceTypeCode}`, 130, y);
+  y += 6;
+  doc.text(`Issue Date: ${header.IssueDate}`, 14, y);
+  doc.text(`Due Date: ${header.DueDate}`, 130, y);
+  y += 6;
+  doc.text(`Buyer: ${header.BuyerID} (${header.BuyerCountry})`, 14, y);
+  y += 8;
+  doc.text("Lines:", 14, y);
+  y += 6;
+  lines.forEach((ln) => {
+    doc.text(
+      `${ln.LineNumber}. ${ln.ItemDescription} | Qty ${ln.Quantity} | Tax ${ln.TaxCategory} | AED ${ln.LineExtensionAmount}`,
+      14,
+      y,
+    );
+    y += 5;
+    if (y > 270) {
+      doc.addPage();
+      y = 14;
+    }
+  });
+  y += 3;
+  doc.text("VAT Breakdown:", 14, y);
+  y += 6;
+  vats.forEach((v) => {
+    doc.text(`Category ${v.TaxCategory} @ ${v.TaxRate}% | Taxable ${v.TaxableAmount} | Tax ${v.TaxAmount}`, 14, y);
+    y += 5;
+    if (y > 270) {
+      doc.addPage();
+      y = 14;
+    }
+  });
+  y += 4;
+  doc.text(`Tax Exclusive: ${header.TaxExclusiveAmount}`, 14, y);
+  y += 5;
+  doc.text(`Tax Amount: ${header.TaxAmount}`, 14, y);
+  y += 5;
+  doc.text(`Tax Inclusive: ${header.TaxInclusiveAmount}`, 14, y);
+  y += 5;
+  doc.text(`Payable: ${header.PayableAmount}`, 14, y);
+  doc.save(`${header.InvoiceID}.pdf`);
 }
 
 async function loadDataset() {
@@ -272,8 +418,55 @@ async function loadDataset() {
   }
 }
 
+async function stageFromFiles(fileList) {
+  const files = Array.from(fileList || []);
+  const needed = ["invoice_headers.csv", "invoice_lines.csv", "invoice_vat_breakdown.csv"];
+  const byName = new Map(files.map((f) => [f.name.toLowerCase(), f]));
+  const missing = needed.filter((n) => !byName.has(n));
+  if (missing.length > 0) {
+    nodes.preloadSummary.textContent = `Missing required file(s): ${missing.join(", ")}`;
+    return;
+  }
+  try {
+    const [hText, lText, vText] = await Promise.all([
+      readFileAsText(byName.get("invoice_headers.csv")),
+      readFileAsText(byName.get("invoice_lines.csv")),
+      readFileAsText(byName.get("invoice_vat_breakdown.csv")),
+    ]);
+    const headers = parseCSV(hText);
+    const lines = parseCSV(lText);
+    const vats = parseCSV(vText);
+    const invoiceCount = new Set(headers.map((h) => h.InvoiceID)).size;
+    state.stagedFiles = { headers, lines, vats };
+    nodes.preloadSummary.textContent =
+      `Staged files: headers=${headers.length} rows, lines=${lines.length} rows, vat=${vats.length} rows, distinct invoices=${invoiceCount}. Click "Load Dataset" to apply.`;
+    setStatus("Files staged from drag/drop.");
+  } catch (err) {
+    setStatus(`File parsing failed: ${err.message}`, true);
+  }
+}
+
+function loadStagedDataset() {
+  if (!state.stagedFiles) return false;
+  state.headers = state.stagedFiles.headers;
+  state.lines = state.stagedFiles.lines;
+  state.vats = state.stagedFiles.vats;
+  buildIndexes();
+  populateSelectOptions();
+  state.selectedInvoice = null;
+  applyFilters();
+  if (state.filtered.length > 0) selectInvoice(state.filtered[0].InvoiceID);
+  setStatus(`Loaded staged dataset: ${state.headers.length} headers, ${state.lines.length} lines.`);
+  return true;
+}
+
 function wireEvents() {
-  nodes.loadBtn.addEventListener("click", loadDataset);
+  nodes.loadBtn.addEventListener("click", async () => {
+    if (!loadStagedDataset()) {
+      await loadDataset();
+    }
+  });
+  nodes.downloadPdfBtn.addEventListener("click", downloadSelectedInvoicePdf);
   [
     nodes.searchInvoice,
     nodes.statusFilter,
@@ -287,6 +480,19 @@ function wireEvents() {
     nodes.maxAmount,
     nodes.segmentFilter,
   ].forEach((el) => el.addEventListener("input", applyFilters));
+  nodes.dropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    nodes.dropZone.classList.add("dragover");
+  });
+  nodes.dropZone.addEventListener("dragleave", () => nodes.dropZone.classList.remove("dragover"));
+  nodes.dropZone.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    nodes.dropZone.classList.remove("dragover");
+    await stageFromFiles(e.dataTransfer.files);
+  });
+  nodes.fileInput.addEventListener("change", async (e) => {
+    await stageFromFiles(e.target.files);
+  });
 }
 
 wireEvents();

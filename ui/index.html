@@ -27,6 +27,13 @@
           <input id="datasetPath" value="../output_pilot/run_20260305T222747Z_20260303" />
           <button id="loadBtn">Load Dataset</button>
         </div>
+        <div class="or-divider">or</div>
+        <div id="dropZone" class="drop-zone">
+          <p>Drag and drop CSV files here</p>
+          <p class="drop-sub">Required: `invoice_headers.csv`, `invoice_lines.csv`, `invoice_vat_breakdown.csv`</p>
+          <input id="fileInput" type="file" multiple accept=".csv" />
+        </div>
+        <div id="preloadSummary" class="preload-summary"></div>
         <p id="statusText" class="status">Ready</p>
       </section>
 
@@ -55,6 +62,7 @@
           <label>
             Search Invoice ID
             <input id="searchInvoice" placeholder="INV-2025-000123" />
+            <span class="hint">Find by partial or full invoice identifier.</span>
           </label>
           <label>
             Status
@@ -63,6 +71,7 @@
               <option value="valid">Valid Only</option>
               <option value="invalid">Invalid Only</option>
             </select>
+            <span class="hint">Valid = no injected issue; Invalid = has scenario code.</span>
           </label>
           <label>
             Invoice Type
@@ -71,12 +80,14 @@
               <option value="380">380</option>
               <option value="381">381</option>
             </select>
+            <span class="hint">380 is invoice, 381 is credit note.</span>
           </label>
           <label>
             Buyer Country
             <select id="countryFilter">
               <option value="all">All</option>
             </select>
+            <span class="hint">Country code of the invoice buyer.</span>
           </label>
           <label>
             Tax Category
@@ -86,28 +97,34 @@
               <option value="Z">Z</option>
               <option value="E">E</option>
             </select>
+            <span class="hint">S = standard, Z = zero, E = exempt.</span>
           </label>
           <label>
             Scenario Code
             <select id="scenarioFilter">
               <option value="all">All</option>
             </select>
+            <span class="hint">Shows targeted negative test scenario type.</span>
           </label>
           <label>
             Date From
             <input type="date" id="dateFrom" />
+            <span class="hint">Start of issue-date range.</span>
           </label>
           <label>
             Date To
             <input type="date" id="dateTo" />
+            <span class="hint">End of issue-date range.</span>
           </label>
           <label>
             Min Payable (AED)
             <input type="number" id="minAmount" min="0" step="0.01" />
+            <span class="hint">Lower bound for payable amount.</span>
           </label>
           <label>
             Max Payable (AED)
             <input type="number" id="maxAmount" min="0" step="0.01" />
+            <span class="hint">Upper bound for payable amount.</span>
           </label>
           <label>
             Amount Segment
@@ -117,6 +134,7 @@
               <option value="medium">Medium (1,000 - 10,000)</option>
               <option value="large">Large (&gt; 10,000)</option>
             </select>
+            <span class="hint">Quick value-banding for invoice size.</span>
           </label>
         </div>
       </section>
@@ -159,8 +177,16 @@
             <pre id="vatDetail"></pre>
           </article>
         </div>
+        <div class="invoice-preview-wrap">
+          <div class="preview-head">
+            <h4>Invoice Preview</h4>
+            <button id="downloadPdfBtn" type="button">Download PDF</button>
+          </div>
+          <div id="invoicePreview" class="invoice-preview"></div>
+        </div>
       </section>
     </main>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="./app.js"></script>
   </body>
   </html>
