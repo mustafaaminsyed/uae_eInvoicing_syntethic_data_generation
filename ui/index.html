@@ -30,14 +30,14 @@
               and schema detection confirms what format the app recognized.
             </p>
           </div>
-          <button class="panel-toggle" type="button" data-target="loaderBody" aria-expanded="true" title="Collapse section">▾</button>
+          <button class="panel-toggle" type="button" data-target="loaderBody" aria-expanded="true" title="Collapse section">v</button>
         </div>
         <div id="loaderBody" class="panel-body">
           <label for="datasetPath">Dataset Folder (relative to repo root)</label>
           <div class="loader-row">
             <input id="datasetPath" value="../output_pilot/run_20260305T222747Z_20260303" />
             <button id="loadBtn" class="run-btn" title="Run / Apply dataset">
-              <span class="btn-icon">▶</span>
+              <span class="btn-icon">&gt;</span>
               <span>Run Dataset</span>
             </button>
           </div>
@@ -75,7 +75,7 @@
               in real time.
             </p>
           </div>
-          <button class="panel-toggle" type="button" data-target="summaryBody" aria-expanded="true" title="Collapse section">▾</button>
+          <button class="panel-toggle" type="button" data-target="summaryBody" aria-expanded="true" title="Collapse section">v</button>
         </div>
         <div id="summaryBody" class="panel-body">
           <section class="summary-grid">
@@ -96,6 +96,11 @@
               <h2 id="invalidDocs">-</h2>
             </article>
           </section>
+          <section class="quality-panel">
+            <h4>Data Quality Insights</h4>
+            <p class="hint">Quick checks on currently filtered documents to detect likely data gaps before preview/export.</p>
+            <div id="qualityMetrics" class="quality-grid"></div>
+          </section>
         </div>
       </section>
 
@@ -108,88 +113,98 @@
               type, tax profile, date range, and value band.
             </p>
           </div>
-          <button class="panel-toggle" type="button" data-target="filtersBody" aria-expanded="true" title="Collapse section">▾</button>
+          <button class="panel-toggle" type="button" data-target="filtersBody" aria-expanded="true" title="Collapse section">v</button>
         </div>
         <div id="filtersBody" class="panel-body">
+          <div class="preset-bar">
+            <span class="preset-label">Quick Presets</span>
+            <button type="button" class="preset-btn" data-preset="all">All</button>
+            <button type="button" class="preset-btn" data-preset="valid">Valid Only</button>
+            <button type="button" class="preset-btn" data-preset="invalid">Invalid Only</button>
+            <button type="button" class="preset-btn" data-preset="invoice">Invoices 380</button>
+            <button type="button" class="preset-btn" data-preset="credit">Credit Notes 381</button>
+            <button type="button" class="preset-btn" data-preset="high_value">High Value (&gt;10k)</button>
+            <button type="button" id="resetFiltersBtn" class="preset-btn">Reset</button>
+          </div>
           <div class="filter-grid">
-          <label>
-            Search Invoice ID
-            <input id="searchInvoice" placeholder="INV-2025-000123" />
-            <span class="hint">Find by partial or full invoice identifier.</span>
-          </label>
-          <label>
-            Status
-            <select id="statusFilter">
-              <option value="all">All</option>
-              <option value="valid">Valid Only</option>
-              <option value="invalid">Invalid Only</option>
-            </select>
-            <span class="hint">Valid = no injected issue; Invalid = has scenario code.</span>
-          </label>
-          <label>
-            Invoice Type (380 = Invoice, 381 = Credit Note)
-            <select id="typeFilter">
-              <option value="all">All</option>
-              <option value="380">380 - Invoice</option>
-              <option value="381">381 - Credit Note</option>
-            </select>
-            <span class="hint">380 is invoice, 381 is credit note.</span>
-          </label>
-          <label>
-            Buyer Country
-            <select id="countryFilter">
-              <option value="all">All</option>
-            </select>
-            <span class="hint">Country code of the invoice buyer.</span>
-          </label>
-          <label>
-            Tax Category (S/Z/E)
-            <select id="taxFilter">
-              <option value="all">All</option>
-              <option value="S">S - Standard Rated</option>
-              <option value="Z">Z - Zero Rated</option>
-              <option value="E">E - Exempt</option>
-            </select>
-            <span class="hint">S = standard, Z = zero, E = exempt.</span>
-          </label>
-          <label>
-            Scenario Code
-            <select id="scenarioFilter">
-              <option value="all">All</option>
-            </select>
-            <span class="hint">Shows targeted negative test scenario type.</span>
-          </label>
-          <label>
-            Date From
-            <input type="date" id="dateFrom" />
-            <span class="hint">Start of issue-date range.</span>
-          </label>
-          <label>
-            Date To
-            <input type="date" id="dateTo" />
-            <span class="hint">End of issue-date range.</span>
-          </label>
-          <label>
-            Min Payable (AED)
-            <input type="number" id="minAmount" min="0" step="0.01" />
-            <span class="hint">Lower bound for payable amount.</span>
-          </label>
-          <label>
-            Max Payable (AED)
-            <input type="number" id="maxAmount" min="0" step="0.01" />
-            <span class="hint">Upper bound for payable amount.</span>
-          </label>
-          <label>
-            Amount Segment
-            <select id="segmentFilter">
-              <option value="all">All</option>
-              <option value="small">Small (&lt; 1,000)</option>
-              <option value="medium">Medium (1,000 - 10,000)</option>
-              <option value="large">Large (&gt; 10,000)</option>
-            </select>
-            <span class="hint">Quick value-banding for invoice size.</span>
-          </label>
-        </div>
+            <label>
+              Search Invoice ID
+              <input id="searchInvoice" placeholder="INV-2025-000123" />
+              <span class="hint">Find by partial or full invoice identifier.</span>
+            </label>
+            <label>
+              Status
+              <select id="statusFilter">
+                <option value="all">All</option>
+                <option value="valid">Valid Only</option>
+                <option value="invalid">Invalid Only</option>
+              </select>
+              <span class="hint">Valid = no injected issue; Invalid = has scenario code.</span>
+            </label>
+            <label>
+              Invoice Type (380 = Invoice, 381 = Credit Note)
+              <select id="typeFilter">
+                <option value="all">All</option>
+                <option value="380">380 - Invoice</option>
+                <option value="381">381 - Credit Note</option>
+              </select>
+              <span class="hint">380 is invoice, 381 is credit note.</span>
+            </label>
+            <label>
+              Buyer Country
+              <select id="countryFilter">
+                <option value="all">All</option>
+              </select>
+              <span class="hint">Country code of the invoice buyer.</span>
+            </label>
+            <label>
+              Tax Category (S/Z/E)
+              <select id="taxFilter">
+                <option value="all">All</option>
+                <option value="S">S - Standard Rated</option>
+                <option value="Z">Z - Zero Rated</option>
+                <option value="E">E - Exempt</option>
+              </select>
+              <span class="hint">S = standard, Z = zero, E = exempt.</span>
+            </label>
+            <label>
+              Scenario Code
+              <select id="scenarioFilter">
+                <option value="all">All</option>
+              </select>
+              <span class="hint">Shows targeted negative test scenario type.</span>
+            </label>
+            <label>
+              Date From
+              <input type="date" id="dateFrom" />
+              <span class="hint">Start of issue-date range.</span>
+            </label>
+            <label>
+              Date To
+              <input type="date" id="dateTo" />
+              <span class="hint">End of issue-date range.</span>
+            </label>
+            <label>
+              Min Payable (AED)
+              <input type="number" id="minAmount" min="0" step="0.01" />
+              <span class="hint">Lower bound for payable amount.</span>
+            </label>
+            <label>
+              Max Payable (AED)
+              <input type="number" id="maxAmount" min="0" step="0.01" />
+              <span class="hint">Upper bound for payable amount.</span>
+            </label>
+            <label>
+              Amount Segment
+              <select id="segmentFilter">
+                <option value="all">All</option>
+                <option value="small">Small (&lt; 1,000)</option>
+                <option value="medium">Medium (1,000 - 10,000)</option>
+                <option value="large">Large (&gt; 10,000)</option>
+              </select>
+              <span class="hint">Quick value-banding for invoice size.</span>
+            </label>
+          </div>
         </div>
       </section>
 
@@ -202,26 +217,69 @@
               preview and PDF tools below.
             </p>
           </div>
-          <button class="panel-toggle" type="button" data-target="tableBody" aria-expanded="true" title="Collapse section">▾</button>
+          <button class="panel-toggle" type="button" data-target="tableBody" aria-expanded="true" title="Collapse section">v</button>
         </div>
         <div id="tableBody" class="panel-body">
+          <div class="table-controls">
+            <label>
+              Sort By
+              <select id="tableSort">
+                <option value="issue_desc">Issue Date (Newest)</option>
+                <option value="issue_asc">Issue Date (Oldest)</option>
+                <option value="payable_desc">Payable (High-Low)</option>
+                <option value="payable_asc">Payable (Low-High)</option>
+                <option value="invoice_asc">Invoice ID (A-Z)</option>
+                <option value="invoice_desc">Invoice ID (Z-A)</option>
+              </select>
+            </label>
+            <label>
+              Page Size
+              <select id="pageSize">
+                <option value="10">10</option>
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </label>
+            <label>
+              Saved View
+              <select id="savedViewSelect">
+                <option value="">Select saved view</option>
+              </select>
+            </label>
+            <div class="table-btn-row">
+              <button id="saveViewBtn" type="button">Save View</button>
+              <button id="loadViewBtn" type="button">Load View</button>
+              <button id="deleteViewBtn" type="button">Delete View</button>
+              <button id="exportFilteredBtn" type="button">Export Filtered CSV</button>
+            </div>
+          </div>
+          <details class="columns-panel">
+            <summary>Visible Columns</summary>
+            <div id="columnToggles" class="column-toggles"></div>
+          </details>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Invoice ID</th>
-                  <th>Type</th>
-                  <th>Issue Date</th>
-                  <th>Buyer</th>
-                  <th>Country</th>
-                  <th>Tax</th>
-                  <th>Payable (AED)</th>
-                  <th>Status</th>
-                  <th>Scenario</th>
+                  <th data-col="invoiceId">Invoice ID</th>
+                  <th data-col="type">Type</th>
+                  <th data-col="issueDate">Issue Date</th>
+                  <th data-col="buyer">Buyer</th>
+                  <th data-col="country">Country</th>
+                  <th data-col="tax">Tax</th>
+                  <th data-col="payable">Payable (AED)</th>
+                  <th data-col="status">Status</th>
+                  <th data-col="scenario">Scenario</th>
                 </tr>
               </thead>
               <tbody id="invoiceTableBody"></tbody>
             </table>
+          </div>
+          <div class="pager-row">
+            <button id="prevPageBtn" type="button">&lt; Previous</button>
+            <span id="pageMeta">0-0 of 0</span>
+            <button id="nextPageBtn" type="button">Next &gt;</button>
           </div>
         </div>
       </section>
@@ -235,7 +293,7 @@
               expand/collapse controls to focus on what matters.
             </p>
           </div>
-          <button class="panel-toggle" type="button" data-target="detailBody" aria-expanded="true" title="Collapse section">▾</button>
+          <button class="panel-toggle" type="button" data-target="detailBody" aria-expanded="true" title="Collapse section">v</button>
         </div>
         <div id="detailBody" class="panel-body">
           <div class="detail-columns">
@@ -306,8 +364,8 @@
                   </select>
                 </label>
                 <div class="coverage-actions">
-                  <button id="coveragePrevBtn" type="button">◀ Previous</button>
-                  <button id="coverageNextBtn" type="button">Next ▶</button>
+                  <button id="coveragePrevBtn" type="button">&lt; Previous</button>
+                  <button id="coverageNextBtn" type="button">Next &gt;</button>
                 </div>
               </div>
               <p id="coverageHint" class="hint">Select an invoice to inspect mandatory-field coverage.</p>
@@ -320,4 +378,4 @@
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="./app.js"></script>
   </body>
-  </html>
+</html>

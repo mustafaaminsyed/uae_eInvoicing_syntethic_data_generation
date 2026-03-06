@@ -12,6 +12,11 @@ const state = {
   mofRowsByInvoice: new Map(),
   coverageStats: new Map(),
   coverageInvoiceIds: [],
+  tableSort: "issue_desc",
+  pageSize: 25,
+  pageIndex: 0,
+  visibleColumns: new Set(["invoiceId", "type", "issueDate", "buyer", "country", "tax", "payable", "status", "scenario"]),
+  savedViews: [],
 };
 
 const $ = (id) => document.getElementById(id);
@@ -44,7 +49,20 @@ const nodes = {
   minAmount: $("minAmount"),
   maxAmount: $("maxAmount"),
   segmentFilter: $("segmentFilter"),
+  resetFiltersBtn: $("resetFiltersBtn"),
   invoiceTableBody: $("invoiceTableBody"),
+  tableSort: $("tableSort"),
+  pageSize: $("pageSize"),
+  prevPageBtn: $("prevPageBtn"),
+  nextPageBtn: $("nextPageBtn"),
+  pageMeta: $("pageMeta"),
+  columnToggles: $("columnToggles"),
+  saveViewBtn: $("saveViewBtn"),
+  loadViewBtn: $("loadViewBtn"),
+  deleteViewBtn: $("deleteViewBtn"),
+  savedViewSelect: $("savedViewSelect"),
+  exportFilteredBtn: $("exportFilteredBtn"),
+  qualityMetrics: $("qualityMetrics"),
   detailTitle: $("detailTitle"),
   headerDetail: $("headerDetail"),
   linesDetail: $("linesDetail"),
@@ -65,6 +83,19 @@ const nodes = {
   pdfHint: $("pdfHint"),
   pdfPreviewFrame: $("pdfPreviewFrame"),
 };
+
+const SAVED_VIEWS_KEY = "uae_einvoice_saved_views_v1";
+const TABLE_COLUMNS = [
+  { key: "invoiceId", label: "Invoice ID" },
+  { key: "type", label: "Type" },
+  { key: "issueDate", label: "Issue Date" },
+  { key: "buyer", label: "Buyer" },
+  { key: "country", label: "Country" },
+  { key: "tax", label: "Tax" },
+  { key: "payable", label: "Payable (AED)" },
+  { key: "status", label: "Status" },
+  { key: "scenario", label: "Scenario" },
+];
 
 const TAXABLE_FIELDS = [
   ["1", "Invoice number", "invoice_number"],
@@ -263,6 +294,249 @@ function amountSegment(v) {
   return "large";
 }
 
+function resetFilters() {
+  nodes.searchInvoice.value = "";
+  nodes.statusFilter.value = "all";
+  nodes.typeFilter.value = "all";
+  nodes.countryFilter.value = "all";
+  nodes.taxFilter.value = "all";
+  nodes.scenarioFilter.value = "all";
+  nodes.dateFrom.value = "";
+  nodes.dateTo.value = "";
+  nodes.minAmount.value = "";
+  nodes.maxAmount.value = "";
+  nodes.segmentFilter.value = "all";
+  applyFilters();
+}
+
+function applyPreset(preset) {
+  resetFilters();
+  if (preset === "valid") {
+    nodes.statusFilter.value = "valid";
+  } else if (preset === "invalid") {
+    nodes.statusFilter.value = "invalid";
+  } else if (preset === "invoice") {
+    nodes.typeFilter.value = "380";
+  } else if (preset === "credit") {
+    nodes.typeFilter.value = "381";
+  } else if (preset === "high_value") {
+    nodes.minAmount.value = "10000";
+  }
+  applyFilters();
+}
+
+function getFilterSnapshot() {
+  return {
+    searchInvoice: nodes.searchInvoice.value,
+    statusFilter: nodes.statusFilter.value,
+    typeFilter: nodes.typeFilter.value,
+    countryFilter: nodes.countryFilter.value,
+    taxFilter: nodes.taxFilter.value,
+    scenarioFilter: nodes.scenarioFilter.value,
+    dateFrom: nodes.dateFrom.value,
+    dateTo: nodes.dateTo.value,
+    minAmount: nodes.minAmount.value,
+    maxAmount: nodes.maxAmount.value,
+    segmentFilter: nodes.segmentFilter.value,
+    tableSort: nodes.tableSort.value,
+    pageSize: nodes.pageSize.value,
+    visibleColumns: [...state.visibleColumns],
+  };
+}
+
+function applyFilterSnapshot(snapshot) {
+  if (!snapshot) return;
+  nodes.searchInvoice.value = snapshot.searchInvoice ?? "";
+  nodes.statusFilter.value = snapshot.statusFilter ?? "all";
+  nodes.typeFilter.value = snapshot.typeFilter ?? "all";
+  nodes.countryFilter.value = snapshot.countryFilter ?? "all";
+  nodes.taxFilter.value = snapshot.taxFilter ?? "all";
+  nodes.scenarioFilter.value = snapshot.scenarioFilter ?? "all";
+  nodes.dateFrom.value = snapshot.dateFrom ?? "";
+  nodes.dateTo.value = snapshot.dateTo ?? "";
+  nodes.minAmount.value = snapshot.minAmount ?? "";
+  nodes.maxAmount.value = snapshot.maxAmount ?? "";
+  nodes.segmentFilter.value = snapshot.segmentFilter ?? "all";
+  nodes.tableSort.value = snapshot.tableSort ?? "issue_desc";
+  nodes.pageSize.value = snapshot.pageSize ?? "25";
+  state.tableSort = nodes.tableSort.value;
+  state.pageSize = Number(nodes.pageSize.value) || 25;
+  if (Array.isArray(snapshot.visibleColumns) && snapshot.visibleColumns.length > 0) {
+    state.visibleColumns = new Set(snapshot.visibleColumns);
+  }
+  renderColumnToggles();
+  applyColumnVisibility();
+  applyFilters();
+}
+
+function renderSavedViews() {
+  const options = state.savedViews
+    .map((v) => `<option value="${v.name}">${v.name}</option>`)
+    .join("");
+  nodes.savedViewSelect.innerHTML = `<option value="">Select saved view</option>${options}`;
+}
+
+function loadSavedViews() {
+  try {
+    const raw = localStorage.getItem(SAVED_VIEWS_KEY);
+    state.savedViews = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(state.savedViews)) state.savedViews = [];
+  } catch {
+    state.savedViews = [];
+  }
+  renderSavedViews();
+}
+
+function persistSavedViews() {
+  localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(state.savedViews));
+  renderSavedViews();
+}
+
+function saveCurrentView() {
+  const name = window.prompt("Enter a name for this view:");
+  if (!name) return;
+  const cleanName = name.trim();
+  if (!cleanName) return;
+  const snapshot = getFilterSnapshot();
+  const existingIdx = state.savedViews.findIndex((v) => v.name === cleanName);
+  if (existingIdx >= 0) {
+    state.savedViews[existingIdx] = { name: cleanName, snapshot };
+  } else {
+    state.savedViews.push({ name: cleanName, snapshot });
+  }
+  persistSavedViews();
+  nodes.savedViewSelect.value = cleanName;
+  setStatus(`Saved view: ${cleanName}`);
+}
+
+function loadSelectedView() {
+  const name = nodes.savedViewSelect.value;
+  if (!name) {
+    setStatus("Select a saved view to load.", true);
+    return;
+  }
+  const picked = state.savedViews.find((v) => v.name === name);
+  if (!picked) {
+    setStatus("Saved view not found.", true);
+    return;
+  }
+  applyFilterSnapshot(picked.snapshot);
+  setStatus(`Loaded view: ${name}`);
+}
+
+function deleteSelectedView() {
+  const name = nodes.savedViewSelect.value;
+  if (!name) {
+    setStatus("Select a saved view to delete.", true);
+    return;
+  }
+  state.savedViews = state.savedViews.filter((v) => v.name !== name);
+  persistSavedViews();
+  setStatus(`Deleted view: ${name}`);
+}
+
+function renderColumnToggles() {
+  nodes.columnToggles.innerHTML = TABLE_COLUMNS.map((col) => {
+    const checked = state.visibleColumns.has(col.key) ? "checked" : "";
+    return `
+      <label class="column-option">
+        <input type="checkbox" data-col-toggle="${col.key}" ${checked} />
+        <span>${col.label}</span>
+      </label>
+    `;
+  }).join("");
+}
+
+function applyColumnVisibility() {
+  const allCols = document.querySelectorAll("[data-col]");
+  allCols.forEach((node) => {
+    const key = node.getAttribute("data-col");
+    node.style.display = state.visibleColumns.has(key) ? "" : "none";
+  });
+}
+
+function getSortedFilteredData() {
+  const rows = state.filtered.slice();
+  rows.sort((a, b) => {
+    if (state.tableSort === "issue_desc") return (b.IssueDate || "").localeCompare(a.IssueDate || "");
+    if (state.tableSort === "issue_asc") return (a.IssueDate || "").localeCompare(b.IssueDate || "");
+    if (state.tableSort === "payable_desc") return numberValue(b.PayableAmount) - numberValue(a.PayableAmount);
+    if (state.tableSort === "payable_asc") return numberValue(a.PayableAmount) - numberValue(b.PayableAmount);
+    if (state.tableSort === "invoice_desc") return (b.InvoiceID || "").localeCompare(a.InvoiceID || "");
+    return (a.InvoiceID || "").localeCompare(b.InvoiceID || "");
+  });
+  return rows;
+}
+
+function paginateRows(rows) {
+  const total = rows.length;
+  const pageSize = Math.max(1, state.pageSize);
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  if (state.pageIndex >= pageCount) state.pageIndex = pageCount - 1;
+  const start = state.pageIndex * pageSize;
+  const end = Math.min(total, start + pageSize);
+  const paged = rows.slice(start, end);
+  nodes.pageMeta.textContent = total === 0 ? "0-0 of 0" : `${start + 1}-${end} of ${total}`;
+  nodes.prevPageBtn.disabled = state.pageIndex <= 0 || total === 0;
+  nodes.nextPageBtn.disabled = state.pageIndex >= pageCount - 1 || total === 0;
+  return paged;
+}
+
+function renderQualityMetrics(dataset) {
+  if (!nodes.qualityMetrics) return;
+  const missingBuyerTrn = dataset.filter((d) => !String(d.BuyerTRN || "").trim()).length;
+  const missingDueDate = dataset.filter((d) => !String(d.DueDate || "").trim()).length;
+  const nonPositivePayable = dataset.filter((d) => numberValue(d.PayableAmount) <= 0).length;
+  const missingTaxProfile = dataset.filter((d) => {
+    const taxes = state.taxByInvoice.get(d.InvoiceID);
+    return !taxes || [...taxes].filter(Boolean).length === 0;
+  }).length;
+  const metrics = [
+    ["Missing Buyer TRN", missingBuyerTrn],
+    ["Missing Due Date", missingDueDate],
+    ["Non-positive Payable", nonPositivePayable],
+    ["Missing Tax Category", missingTaxProfile],
+  ];
+  nodes.qualityMetrics.innerHTML = metrics
+    .map(([label, count]) => `<article class="quality-card"><p>${label}</p><h5>${count}</h5></article>`)
+    .join("");
+}
+
+function escapeCsvCell(value) {
+  const raw = String(value ?? "");
+  if (raw.includes(",") || raw.includes('"') || raw.includes("\n")) {
+    return `"${raw.replace(/"/g, '""')}"`;
+  }
+  return raw;
+}
+
+function exportFilteredCsv() {
+  const rows = getSortedFilteredData();
+  const headers = TABLE_COLUMNS.map((c) => c.label);
+  const body = rows.map((h) => [
+    h.InvoiceID,
+    h.InvoiceTypeCode,
+    h.IssueDate,
+    h.BuyerID,
+    h.BuyerCountry,
+    [...(state.taxByInvoice.get(h.InvoiceID) || [])].join(", "),
+    h.PayableAmount,
+    h.ErrorScenarioCode ? "Invalid" : "Valid",
+    h.ErrorScenarioCode || "",
+  ]);
+  const csv = [headers, ...body].map((row) => row.map(escapeCsvCell).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "filtered_invoices.csv";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  setStatus(`Exported ${rows.length} filtered records to CSV.`);
+}
+
 function recomputeCoverageForCurrentMode() {
   state.coverageStats = new Map();
   const fields = nodes.invoiceMode.value === "commercial" ? [...TAXABLE_FIELDS, ...COMMERCIAL_EXTRA_FIELDS] : TAXABLE_FIELDS;
@@ -356,6 +630,7 @@ function applyFilters() {
     return true;
   });
 
+  state.pageIndex = 0;
   renderSummary(state.filtered);
   renderTable();
   refreshCoverageNavigator();
@@ -370,6 +645,7 @@ function renderSummary(dataset) {
   nodes.invoice380.textContent = String(inv380);
   nodes.invoice381.textContent = String(inv381);
   nodes.invalidDocs.textContent = String(invalid);
+  renderQualityMetrics(dataset);
 }
 
 function rowStatusChip(header) {
@@ -381,24 +657,27 @@ function rowStatusChip(header) {
 function renderTable() {
   nodes.invoiceTableBody.innerHTML = "";
   const fragment = document.createDocumentFragment();
-  state.filtered.forEach((h) => {
+  const sorted = getSortedFilteredData();
+  const rows = paginateRows(sorted);
+  rows.forEach((h) => {
     const tr = document.createElement("tr");
     if (state.selectedInvoice === h.InvoiceID) tr.classList.add("selected");
     tr.innerHTML = `
-      <td>${h.InvoiceID}</td>
-      <td>${h.InvoiceTypeCode}</td>
-      <td>${h.IssueDate}</td>
-      <td>${h.BuyerID}</td>
-      <td>${h.BuyerCountry}</td>
-      <td>${[...(state.taxByInvoice.get(h.InvoiceID) || [])].join(", ")}</td>
-      <td>${h.PayableAmount}</td>
-      <td>${rowStatusChip(h)}</td>
-      <td>${h.ErrorScenarioCode || "-"}</td>
+      <td data-col="invoiceId">${h.InvoiceID}</td>
+      <td data-col="type">${h.InvoiceTypeCode}</td>
+      <td data-col="issueDate">${h.IssueDate}</td>
+      <td data-col="buyer">${h.BuyerID}</td>
+      <td data-col="country">${h.BuyerCountry}</td>
+      <td data-col="tax">${[...(state.taxByInvoice.get(h.InvoiceID) || [])].join(", ")}</td>
+      <td data-col="payable">${h.PayableAmount}</td>
+      <td data-col="status">${rowStatusChip(h)}</td>
+      <td data-col="scenario">${h.ErrorScenarioCode || "-"}</td>
     `;
     tr.addEventListener("click", () => selectInvoice(h.InvoiceID));
     fragment.appendChild(tr);
   });
   nodes.invoiceTableBody.appendChild(fragment);
+  applyColumnVisibility();
 }
 
 function selectInvoice(invoiceId) {
@@ -1049,6 +1328,45 @@ function wireEvents() {
     nodes.maxAmount,
     nodes.segmentFilter,
   ].forEach((el) => el.addEventListener("input", applyFilters));
+  nodes.tableSort.addEventListener("change", () => {
+    state.tableSort = nodes.tableSort.value;
+    state.pageIndex = 0;
+    renderTable();
+  });
+  nodes.pageSize.addEventListener("change", () => {
+    state.pageSize = Number(nodes.pageSize.value) || 25;
+    state.pageIndex = 0;
+    renderTable();
+  });
+  nodes.prevPageBtn.addEventListener("click", () => {
+    if (state.pageIndex <= 0) return;
+    state.pageIndex -= 1;
+    renderTable();
+  });
+  nodes.nextPageBtn.addEventListener("click", () => {
+    state.pageIndex += 1;
+    renderTable();
+  });
+  nodes.resetFiltersBtn.addEventListener("click", resetFilters);
+  document.querySelectorAll(".preset-btn[data-preset]").forEach((btn) => {
+    btn.addEventListener("click", () => applyPreset(btn.getAttribute("data-preset")));
+  });
+  nodes.saveViewBtn.addEventListener("click", saveCurrentView);
+  nodes.loadViewBtn.addEventListener("click", loadSelectedView);
+  nodes.deleteViewBtn.addEventListener("click", deleteSelectedView);
+  nodes.exportFilteredBtn.addEventListener("click", exportFilteredCsv);
+  nodes.columnToggles.addEventListener("change", (e) => {
+    const target = e.target;
+    if (!(target instanceof HTMLInputElement)) return;
+    const key = target.getAttribute("data-col-toggle");
+    if (!key) return;
+    if (target.checked) {
+      state.visibleColumns.add(key);
+    } else {
+      state.visibleColumns.delete(key);
+    }
+    applyColumnVisibility();
+  });
   nodes.dropZone.addEventListener("dragover", (e) => {
     e.preventDefault();
     nodes.dropZone.classList.add("dragover");
@@ -1105,7 +1423,6 @@ function wireEvents() {
       const panelBody = document.getElementById(targetId);
       if (!panelBody) return;
       const isCollapsed = panelBody.classList.toggle("collapsed");
-      btn.textContent = isCollapsed ? "▸" : "▾";
       btn.textContent = isCollapsed ? ">" : "v";
       btn.setAttribute("aria-expanded", String(!isCollapsed));
     });
@@ -1113,6 +1430,11 @@ function wireEvents() {
 }
 
 wireEvents();
+loadSavedViews();
+renderColumnToggles();
+applyColumnVisibility();
+state.tableSort = nodes.tableSort.value;
+state.pageSize = Number(nodes.pageSize.value) || 25;
 setUploadState("idle", "No files staged");
 nodes.pdfMaxDocs.disabled = true;
 setChecklist(new Map());

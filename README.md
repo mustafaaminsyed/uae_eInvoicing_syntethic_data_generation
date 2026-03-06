@@ -100,6 +100,7 @@ Latest UI capabilities include:
 - section-level expand/collapse toggles across all major panels
 - drag-and-drop upload with checklist and schema detection
 - staged/verified/loaded/error upload states with row-count summaries
+- quick filter preset chips (`all`, `valid`, `invalid`, `380`, `381`, `high value`)
 - invoice mode switch:
   - `Taxable E-Invoice (Mandatory 4.1)`
   - `Commercial XML (Mandatory 1-51)`
@@ -111,6 +112,11 @@ Latest UI capabilities include:
   - previous/next navigation
 - PDF preview before download
 - PDF scope controls (`selected` vs `filtered`) with max-document guardrail
+- sortable and paginated results table with page-size controls
+- configurable visible table columns via toggle panel
+- saved filter views (browser local storage)
+- filtered dataset CSV export for handoff/review
+- data quality insight cards over filtered scope (missing key fields and profile gaps)
 
 To run locally:
 
