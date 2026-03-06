@@ -131,6 +131,23 @@ Smoke-tested locally on March 6, 2026 by:
 - JavaScript syntax check (`node --check ui/app.js`)
 - temporary local HTTP serve + content checks for `/`, `/app.js`, `/styles.css`
 
+## Vercel Deployment
+
+The UI is deployable as a static site on Vercel.
+
+Recommended Vercel settings:
+
+- Framework Preset: `Other`
+- Root Directory: `ui`
+- Build Command: *(empty)*
+- Output Directory: *(empty)*
+- Install Command: *(empty)*
+
+Important runtime note:
+
+- On Vercel, use drag-and-drop CSV upload in the app.
+- Local folder paths such as `../output_pilot/...` are for local machine runs and are not available in hosted runtime.
+
 To run locally:
 
 ```powershell
@@ -163,8 +180,4 @@ The MoF-schema-first generator (`generate_mof_schema_dataset.py`) is used for ex
 
 ## Branch and Version Control
 
-Work is currently on:
-
-- `feature/mof-schema-alignment`
-
-The repository was initialized locally and committed in checkpoints to support rollback and controlled iteration.
+Active working branch is currently `main`, with checkpoint commits used to support rollback and controlled iteration.
