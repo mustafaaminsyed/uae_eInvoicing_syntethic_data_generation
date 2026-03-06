@@ -118,6 +118,19 @@ Latest UI capabilities include:
 - filtered dataset CSV export for handoff/review
 - data quality insight cards over filtered scope (missing key fields and profile gaps)
 
+## Latest Checkpoint (UI Enhancements + Smoke Test)
+
+Latest checkpoint includes:
+
+- quick presets, saved views, sortable/paginated table, and visible-column toggles
+- filtered CSV export and summary data-quality insight cards
+- section toggle/icon cleanup and encoding fix
+
+Smoke-tested locally on March 6, 2026 by:
+
+- JavaScript syntax check (`node --check ui/app.js`)
+- temporary local HTTP serve + content checks for `/`, `/app.js`, `/styles.css`
+
 To run locally:
 
 ```powershell
